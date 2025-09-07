@@ -7,7 +7,7 @@ class InvoiceHistoryScreen extends StatefulWidget {
   const InvoiceHistoryScreen({super.key});
 
   @override
-  _InvoiceHistoryScreenState createState() => _InvoiceHistoryScreenState();
+  State<InvoiceHistoryScreen> createState() => _InvoiceHistoryScreenState();
 }
 
 class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
