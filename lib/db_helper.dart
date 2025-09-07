@@ -176,6 +176,64 @@ class DBHelper {
     await db.delete('invoice_items');
     await db.delete('invoices');
   }
+
+  static Future<List<Map<String, dynamic>>> getInvoicesFiltered({
+    DateTime? startDate,
+    DateTime? endDate,
+    double? minTotal,
+    double? maxTotal,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final db = await getDb();
+    String where = '';
+    List<dynamic> whereArgs = [];
+
+    if (startDate != null) {
+      where += '${where.isEmpty ? '' : ' AND '}date >= ?';
+      whereArgs.add(startDate.toIso8601String());
+    }
+
+    if (endDate != null) {
+      where += '${where.isEmpty ? '' : ' AND '}date <= ?';
+      whereArgs.add(endDate.toIso8601String());
+    }
+
+    if (minTotal != null) {
+      where += '${where.isEmpty ? '' : ' AND '}total >= ?';
+      whereArgs.add(minTotal);
+    }
+
+    if (maxTotal != null) {
+      where += '${where.isEmpty ? '' : ' AND '}total <= ?';
+      whereArgs.add(maxTotal);
+    }
+
+    return db.query(
+      'invoices',
+      where: where.isEmpty ? null : where,
+      whereArgs: whereArgs.isEmpty ? null : whereArgs,
+      orderBy: 'id DESC',
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  static Future<Map<String, dynamic>?> getCustomerById(int id) async {
+    final db = await getDb();
+    final result = await db.query(
+      'customers', // nombre de tu tabla de clientes
+      where: 'id = ?', // condición
+      whereArgs: [id], // argumentos para la condición
+      limit: 1, // solo queremos un registro
+    );
+
+    if (result.isNotEmpty) {
+      return result.first; // devuelve el primer registro encontrado
+    } else {
+      return null; // si no existe, devuelve null
+    }
+  }
 }
 
 // Solo usarlo en desarrollo para reiniciar la DB

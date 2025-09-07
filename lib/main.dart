@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'invoice_screen.dart';
 import 'product_screen.dart';
+import 'invoice_history_screen.dart';
 
 void main() {
   runApp(const HieloPosApp());
@@ -17,9 +18,10 @@ class HieloPosApp extends StatelessWidget {
       initialRoute: '/invoice',
       routes: {
         '/invoice': (context) =>
-            const BaseScreen(child: InvoiceScreen(), title: 'Facturas'),
+            const BaseScreen(title: 'Facturas', child: InvoiceScreen()),
         '/products': (context) =>
-            const BaseScreen(child: ProductScreen(), title: 'Productos'),
+            const BaseScreen(title: 'Productos', child: ProductScreen()),
+        '/invoice_history': (context) => const InvoiceHistoryScreen(),
       },
     );
   }
@@ -59,6 +61,13 @@ class BaseScreen extends StatelessWidget {
               title: const Text('Productos'),
               onTap: () {
                 Navigator.pushReplacementNamed(context, '/products');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Historial de Facturas'),
+              onTap: () {
+                Navigator.pushNamed(context, '/invoice_history');
               },
             ),
           ],
