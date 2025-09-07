@@ -173,7 +173,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       : 0;
                   return ListTile(
                     title: Text(p['name']),
-                    subtitle: Text('Precio: \$${p['price']}'),
+                    subtitle: Text('Precio: C\$ ${p['price']}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -200,7 +200,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total: \$$_total',
+                  'Total: C\$ $_total',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
