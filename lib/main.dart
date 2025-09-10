@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'invoice_screen.dart';
 import 'product_screen.dart';
+import 'invoice_detail_screen.dart';
 import 'invoice_history_screen.dart';
 import 'customer_screen.dart';
 import 'seller_screen.dart';
@@ -23,6 +24,11 @@ class HieloPosApp extends StatelessWidget {
             const BaseScreen(title: 'Facturas', child: InvoiceScreen()),
         '/products': (context) =>
             const BaseScreen(title: 'Productos', child: ProductScreen()),
+        '/invoice_detail': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as int;
+          return InvoiceDetailScreen(invoiceId: args);
+        },
+
         '/invoice_history': (context) => const InvoiceHistoryScreen(),
         '/customers': (context) =>
             const BaseScreen(title: 'Clientes', child: CustomerScreen()),

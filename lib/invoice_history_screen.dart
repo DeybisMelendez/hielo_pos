@@ -205,6 +205,13 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                                 trailing: Text(
                                   currencyFormat.format(inv['total']),
                                 ),
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/invoice_detail',
+                                    arguments: inv['id'] as int,
+                                  );
+                                },
                               ),
                             );
                           },
