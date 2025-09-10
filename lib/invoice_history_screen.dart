@@ -203,7 +203,11 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                                   'Fecha: ${DateFormat.yMd().format(DateTime.parse(inv['date']))}',
                                 ),
                                 trailing: Text(
-                                  currencyFormat.format(inv['total']),
+                                  "C\$ ${inv['total']}",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                                 onTap: () {
                                   Navigator.pushNamed(

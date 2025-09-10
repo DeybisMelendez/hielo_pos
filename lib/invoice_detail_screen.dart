@@ -176,7 +176,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                   "C\$ ${item['total']}",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    fontSize: 16,
                   ),
                 ),
               ),
