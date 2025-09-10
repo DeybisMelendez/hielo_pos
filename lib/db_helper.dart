@@ -258,6 +258,33 @@ class DBHelper {
     final db = await getDb();
     return db.delete('customers', where: 'id = ?', whereArgs: [id]);
   }
+
+  // ---------- VENDEDORES ----------
+  static Future<List<Map<String, dynamic>>> getSellers() async {
+    final db = await getDb();
+    return db.query('sellers', orderBy: 'id ASC');
+  }
+
+  static Future<int> insertSeller(Map<String, dynamic> seller) async {
+    final db = await getDb();
+    return db.insert('sellers', seller);
+  }
+
+  static Future<int> updateSeller(int id, Map<String, dynamic> seller) async {
+    final db = await getDb();
+    return db.update('sellers', seller, where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<int> deleteSeller(int id) async {
+    final db = await getDb();
+    return db.delete('sellers', where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<Map<String, dynamic>?> getSellerById(int id) async {
+    final db = await getDb();
+    final result = await db.query('sellers', where: 'id = ?', whereArgs: [id]);
+    return result.isNotEmpty ? result.first : null;
+  }
 }
 
 // Solo usarlo en desarrollo para reiniciar la DB

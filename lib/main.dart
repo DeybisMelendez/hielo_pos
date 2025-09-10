@@ -3,6 +3,7 @@ import 'invoice_screen.dart';
 import 'product_screen.dart';
 import 'invoice_history_screen.dart';
 import 'customer_screen.dart';
+import 'seller_screen.dart';
 
 void main() {
   runApp(const HieloPosApp());
@@ -25,6 +26,8 @@ class HieloPosApp extends StatelessWidget {
         '/invoice_history': (context) => const InvoiceHistoryScreen(),
         '/customers': (context) =>
             const BaseScreen(title: 'Clientes', child: CustomerScreen()),
+        '/sellers': (context) =>
+            const BaseScreen(title: 'Vendedores', child: SellerScreen()),
       },
     );
   }
@@ -45,11 +48,19 @@ class BaseScreen extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                'Hielo POS',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Colors.blue),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Logo
+                  SizedBox(height: 80, child: Image.asset('assets/logo.png')),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Hielo Motastepe POS',
+                    style: TextStyle(color: Colors.white, fontSize: 24),
+                  ),
+                ],
               ),
             ),
             ListTile(
@@ -78,6 +89,13 @@ class BaseScreen extends StatelessWidget {
               title: const Text('Clientes'),
               onTap: () {
                 Navigator.pushReplacementNamed(context, '/customers');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.store),
+              title: const Text('Vendedores'),
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/sellers');
               },
             ),
           ],
