@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'db_helper.dart';
-import "localization.dart";
+import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});
@@ -17,6 +19,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   List<Map<String, dynamic>> selectedItems = [];
   int? selectedCustomerId;
   int? selectedSellerId;
+  ReceiptController? controller;
 
   @override
   void initState() {
@@ -136,8 +139,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   Future<void> _loadData() async {
     final prods = await DBHelper.getProducts();
-    final custs = await DBHelper.getDb().then((db) => db.query('customers'));
-    final sels = await DBHelper.getDb().then((db) => db.query('sellers'));
+    final custs = await DBHelper.getCustomers();
+    final sels = await DBHelper.getSellers();
     setState(() {
       products = prods;
       customers = custs;
@@ -196,18 +199,78 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       items: selectedItems,
       total: _total,
     );
+    try {
+      // Imprimir factura
+      await _printInvoice(invoiceId);
 
-    // Imprimir factura
-    await _printInvoice(invoiceId);
+      setState(() {
+        selectedItems.clear();
+      });
 
-    setState(() {
-      selectedItems.clear();
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Factura generada e impresa correctamente')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Factura generada e impresa correctamente'),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al imprimir la factura: $e')),
+      );
+    }
   }
 
-  Future<void> _printInvoice(int invoiceId) async {}
+  Future<void> _printPage(int invoiceId, String type) async {
+    try {
+      // Seleccionar impresora
+      final device = await FlutterBluetoothPrinter.selectDevice(context);
+      if (device == null) return;
+
+      // Construir contenido de la factura
+      final buffer = StringBuffer();
+      buffer.writeln('*** FACTURA #$invoiceId - $type ***');
+      buffer.writeln(
+        'Cliente: ${customers.firstWhere((c) => c["id"] == selectedCustomerId)["name"]}',
+      );
+      buffer.writeln(
+        'Vendedor: ${sellers.firstWhere((s) => s["id"] == selectedSellerId)["name"]}',
+      );
+      buffer.writeln('--------------------------------');
+
+      for (var item in selectedItems) {
+        final name = item['name'];
+        final qty = item['quantity'];
+        final price = item['price'];
+        final total = item['total'];
+        buffer.writeln('$name  x$qty   C\$${price.toStringAsFixed(2)}');
+        buffer.writeln('                  C\$${total.toStringAsFixed(2)}');
+      }
+
+      buffer.writeln('--------------------------------');
+      buffer.writeln('TOTAL: C\$${_total.toStringAsFixed(2)}');
+      buffer.writeln('');
+      buffer.writeln('¡Gracias por su compra!');
+      buffer.writeln('');
+      buffer.writeln('');
+      buffer.writeln('');
+      Uint8List bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+      bytes.addAll(Commands.cutPaper);
+
+      // Enviar a la impresora
+      await FlutterBluetoothPrinter.printBytes(
+        data: bytes,
+        address: device.address,
+        keepConnected: false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al imprimir: $e')));
+    }
+  }
+
+  Future<void> _printInvoice(int invoiceId) async {
+    await _printPage(invoiceId, 'ORIGINAL');
+    await Future.delayed(const Duration(seconds: 2));
+    await _printPage(invoiceId, 'COPIA');
+  }
 }
