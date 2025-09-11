@@ -210,26 +210,28 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       return;
     }
 
-    int invoiceId;
     try {
-      // Guardar la factura en la base de datos
-      invoiceId = await DBHelper.createInvoice(
+      // Seleccionar impresora antes de crear la factura
+      final device = await FlutterBluetoothPrinter.selectDevice(context);
+      if (device == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se seleccionó ninguna impresora')),
+        );
+        return;
+      }
+
+      // Guardar factura en la base de datos
+      int invoiceId = await DBHelper.createInvoice(
         customerId: selectedCustomerId!,
         sellerId: selectedSellerId!,
         items: selectedItems,
         total: _total,
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar la factura: $e')),
-      );
-      return;
-    }
 
-    try {
-      // Intentar imprimir factura (original y copia)
-      await _printInvoice(invoiceId);
+      // Imprimir factura (original y copia)
+      await _printInvoice(invoiceId, device);
 
+      // Limpiar selección de productos
       setState(() {
         selectedItems.clear();
       });
@@ -240,89 +242,82 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
       );
     } catch (e) {
-      // Si la impresión falla, el usuario ya tiene la factura guardada
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Factura guardada, pero hubo un error al imprimir: $e'),
+          content: Text(
+            'Ocurrió un error al generar o imprimir la factura: $e',
+          ),
         ),
       );
     }
   }
 
-  Future<void> _printPage(int invoiceId, String type) async {
-    // Validación de datos antes de imprimir
-    if (selectedCustomerId == null ||
-        selectedSellerId == null ||
-        selectedItems.isEmpty) {
-      throw Exception('Datos de factura incompletos');
-    }
-
+  // Ahora _printInvoice recibe la impresora seleccionada
+  Future<void> _printInvoice(int invoiceId, BluetoothDevice device) async {
     try {
-      // Seleccionar impresora
-      final device = await FlutterBluetoothPrinter.selectDevice(context);
-      if (device == null) {
-        throw Exception('No se seleccionó ninguna impresora');
-      }
-
-      // Construir contenido de la factura
-      final buffer = StringBuffer();
-      buffer.writeln('*** FACTURA #$invoiceId - $type ***');
-      buffer.writeln(
-        'Cliente: ${customers.firstWhere((c) => c["id"] == selectedCustomerId)["name"]}',
-      );
-      buffer.writeln(
-        'Vendedor: ${sellers.firstWhere((s) => s["id"] == selectedSellerId)["name"]}',
-      );
-      buffer.writeln('--------------------------------');
-
-      for (var item in selectedItems) {
-        final name = item['name'];
-        final qty = item['quantity'];
-        final price = item['price'];
-        final total = item['total'];
-        buffer.writeln('$name  x$qty   C\$${price.toStringAsFixed(2)}');
-        buffer.writeln('                  C\$${total.toStringAsFixed(2)}');
-      }
-
-      buffer.writeln('--------------------------------');
-      buffer.writeln('TOTAL: C\$${_total.toStringAsFixed(2)}');
-      buffer.writeln('');
-      buffer.writeln('¡Gracias por su compra!');
-      buffer.writeln('');
-      buffer.writeln('');
-      buffer.writeln('');
-
-      Uint8List bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
-      bytes.addAll(Commands.cutPaper);
-
-      await FlutterBluetoothPrinter.printBytes(
-        data: bytes,
-        address: device.address,
-        keepConnected: false,
-      );
+      await _printPage(invoiceId, 'ORIGINAL', device);
     } catch (e) {
-      // Lanzar excepción para que _printInvoice la capture
-      throw Exception('Error al imprimir $type: $e');
-    }
-  }
-
-  Future<void> _printInvoice(int invoiceId) async {
-    try {
-      await _printPage(invoiceId, 'ORIGINAL');
-    } catch (e) {
-      // Registrar error de impresión del original, continuar con la copia
       debugPrint('Error al imprimir original: $e');
     }
 
     await Future.delayed(const Duration(seconds: 2));
 
     try {
-      await _printPage(invoiceId, 'COPIA');
+      await _printPage(invoiceId, 'COPIA', device);
     } catch (e) {
       debugPrint('Error al imprimir copia: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Hubo un error al imprimir la copia: $e')),
       );
     }
+  }
+
+  // _printPage ahora usa la impresora ya seleccionada
+  Future<void> _printPage(
+    int invoiceId,
+    String type,
+    BluetoothDevice device,
+  ) async {
+    if (selectedCustomerId == null ||
+        selectedSellerId == null ||
+        selectedItems.isEmpty) {
+      throw Exception('Datos de factura incompletos');
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('*** FACTURA #$invoiceId - $type ***');
+    buffer.writeln(
+      'Cliente: ${customers.firstWhere((c) => c["id"] == selectedCustomerId)["name"]}',
+    );
+    buffer.writeln(
+      'Vendedor: ${sellers.firstWhere((s) => s["id"] == selectedSellerId)["name"]}',
+    );
+    buffer.writeln('--------------------------------');
+
+    for (var item in selectedItems) {
+      final name = item['name'];
+      final qty = item['quantity'];
+      final price = item['price'];
+      final total = item['total'];
+      buffer.writeln('$name  x$qty   C\$${price.toStringAsFixed(2)}');
+      buffer.writeln('                  C\$${total.toStringAsFixed(2)}');
+    }
+
+    buffer.writeln('--------------------------------');
+    buffer.writeln('TOTAL: C\$${_total.toStringAsFixed(2)}');
+    buffer.writeln('');
+    buffer.writeln('¡Gracias por su compra!');
+    buffer.writeln('');
+    buffer.writeln('');
+    buffer.writeln('');
+
+    Uint8List bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+    bytes.addAll(Commands.cutPaper);
+
+    await FlutterBluetoothPrinter.printBytes(
+      data: bytes,
+      address: device.address,
+      keepConnected: false,
+    );
   }
 }
