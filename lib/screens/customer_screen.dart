@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'db_helper.dart';
+import '../db_helper.dart';
 
 class CustomerScreen extends StatefulWidget {
   const CustomerScreen({super.key});

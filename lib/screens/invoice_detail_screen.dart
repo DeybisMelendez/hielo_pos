@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'db_helper.dart';
+import '../db_helper.dart';
 
 class InvoiceDetailScreen extends StatefulWidget {
   final int invoiceId;
