@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'db_helper.dart';
+import '../db_helper.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -252,7 +252,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
   }
 
-  // Ahora _printInvoice recibe la impresora seleccionada
   Future<void> _printInvoice(int invoiceId, BluetoothDevice device) async {
     try {
       await _printPage(invoiceId, 'ORIGINAL', device);

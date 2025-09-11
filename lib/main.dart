@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'create_invoice_screen.dart';
-import 'product_screen.dart';
-import 'invoice_detail_screen.dart';
-import 'invoice_history_screen.dart';
-import 'customer_screen.dart';
-import 'seller_screen.dart';
+import 'screens/create_invoice_screen.dart';
+import 'screens/product_screen.dart';
+import 'screens/invoice_detail_screen.dart';
+import 'screens/invoice_history_screen.dart';
+import 'screens/customer_screen.dart';
+import 'screens/seller_screen.dart';
 
 void main() {
   runApp(const HieloPosApp());
