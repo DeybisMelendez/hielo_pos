@@ -17,21 +17,21 @@ class DBHelper {
           CREATE TABLE products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            price REAL NOT NULL,
+            price REAL NOT NULL
           )
         ''');
 
         await db.execute('''
           CREATE TABLE customers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
+            name TEXT NOT NULL
           )
       ''');
 
         await db.execute('''
           CREATE TABLE sellers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
+            name TEXT NOT NULL
           )
         ''');
 
@@ -42,9 +42,9 @@ class DBHelper {
             seller_id INTEGER NOT NULL,
             date TEXT NOT NULL,
             total REAL NOT NULL,
-            FOREIGN KEY(customer_id) REFERENCES customers(id),
-            FOREIGN KEY(seller_id) REFERENCES sellers(id),
-            is_cancelled INTEGER NOT NULL DEFAULT 0 CHECK (is_cancelled IN (0, 1)),
+            is_cancelled INTEGER NOT NULL DEFAULT 0 CHECK (is_cancelled IN (0,1)),
+            FOREIGN KEY (customer_id) REFERENCES customers(id),
+            FOREIGN KEY (seller_id) REFERENCES sellers(id)
           )
         ''');
 

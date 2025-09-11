@@ -188,19 +188,46 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _saveInvoice() async {
-    if (selectedCustomerId == null ||
-        selectedSellerId == null ||
-        selectedItems.isEmpty) {
+    // Validación básica
+    if (selectedCustomerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe seleccionar un cliente')),
+      );
       return;
     }
-    final invoiceId = await DBHelper.createInvoice(
-      customerId: selectedCustomerId!,
-      sellerId: selectedSellerId!,
-      items: selectedItems,
-      total: _total,
-    );
+
+    if (selectedSellerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe seleccionar un vendedor')),
+      );
+      return;
+    }
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe agregar al menos un producto')),
+      );
+      return;
+    }
+
+    int invoiceId;
     try {
-      // Imprimir factura
+      // Guardar la factura en la base de datos
+      invoiceId = await DBHelper.createInvoice(
+        customerId: selectedCustomerId!,
+        sellerId: selectedSellerId!,
+        items: selectedItems,
+        total: _total,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar la factura: $e')),
+      );
+      return;
+    }
+
+    try {
+      // Intentar imprimir factura (original y copia)
       await _printInvoice(invoiceId);
 
       setState(() {
@@ -213,17 +240,29 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
       );
     } catch (e) {
+      // Si la impresión falla, el usuario ya tiene la factura guardada
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al imprimir la factura: $e')),
+        SnackBar(
+          content: Text('Factura guardada, pero hubo un error al imprimir: $e'),
+        ),
       );
     }
   }
 
   Future<void> _printPage(int invoiceId, String type) async {
+    // Validación de datos antes de imprimir
+    if (selectedCustomerId == null ||
+        selectedSellerId == null ||
+        selectedItems.isEmpty) {
+      throw Exception('Datos de factura incompletos');
+    }
+
     try {
       // Seleccionar impresora
       final device = await FlutterBluetoothPrinter.selectDevice(context);
-      if (device == null) return;
+      if (device == null) {
+        throw Exception('No se seleccionó ninguna impresora');
+      }
 
       // Construir contenido de la factura
       final buffer = StringBuffer();
@@ -252,25 +291,38 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       buffer.writeln('');
       buffer.writeln('');
       buffer.writeln('');
+
       Uint8List bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
       bytes.addAll(Commands.cutPaper);
 
-      // Enviar a la impresora
       await FlutterBluetoothPrinter.printBytes(
         data: bytes,
         address: device.address,
         keepConnected: false,
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al imprimir: $e')));
+      // Lanzar excepción para que _printInvoice la capture
+      throw Exception('Error al imprimir $type: $e');
     }
   }
 
   Future<void> _printInvoice(int invoiceId) async {
-    await _printPage(invoiceId, 'ORIGINAL');
+    try {
+      await _printPage(invoiceId, 'ORIGINAL');
+    } catch (e) {
+      // Registrar error de impresión del original, continuar con la copia
+      debugPrint('Error al imprimir original: $e');
+    }
+
     await Future.delayed(const Duration(seconds: 2));
-    await _printPage(invoiceId, 'COPIA');
+
+    try {
+      await _printPage(invoiceId, 'COPIA');
+    } catch (e) {
+      debugPrint('Error al imprimir copia: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Hubo un error al imprimir la copia: $e')),
+      );
+    }
   }
 }

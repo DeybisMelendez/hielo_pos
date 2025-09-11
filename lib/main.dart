@@ -16,9 +16,9 @@ class HieloPosApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Hielo POS',
+      title: 'Hielo Motastepe POS',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/invoice',
+      initialRoute: '/create-invoice',
       routes: {
         '/create-invoice': (context) => const BaseScreen(
           title: 'Crear Factura',
