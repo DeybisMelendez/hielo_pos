@@ -187,7 +187,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         final inv = invoices[index];
 
                         return FutureBuilder<Map<String, dynamic>?>(
-                          future: DBHelper.getCustomerById(inv['customer_id']),
+                          future: DBHelper.getCustomer(inv['customer_id']),
                           builder: (context, snapshot) {
                             String customerName = 'Desconocido';
                             if (snapshot.connectionState ==

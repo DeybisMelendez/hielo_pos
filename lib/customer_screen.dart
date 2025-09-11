@@ -77,7 +77,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
               if (name.isEmpty) return;
 
               if (customer == null) {
-                await DBHelper.insertCustomer({
+                await DBHelper.createCustomer({
                   'name': name,
                   'address': address,
                   'phone': phone,

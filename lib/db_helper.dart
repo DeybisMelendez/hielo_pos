@@ -77,13 +77,13 @@ class DBHelper {
     return _db!;
   }
 
-  // ---------- PRODUCTOS ----------
+  // Productos
   static Future<List<Map<String, dynamic>>> getProducts() async {
     final db = await getDb();
     return db.query('products', orderBy: 'id ASC');
   }
 
-  static Future<int> insertProduct(Map<String, dynamic> product) async {
+  static Future<int> createProduct(Map<String, dynamic> product) async {
     final db = await getDb();
     return db.insert('products', product);
   }
@@ -98,58 +98,32 @@ class DBHelper {
     return db.delete('products', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ---------- VENTAS (Facturas) ----------
+  // Facturación
   static Future<int> createInvoice({
-    int? customerId,
-    int? sellerId,
-    required List<Map<String, dynamic>> items, // [{product_id, quantity}]
+    required int customerId,
+    required int sellerId,
+    required double total,
+    required List<Map<String, dynamic>> items,
   }) async {
     final db = await getDb();
-    final dateStr = DateTime.now().toIso8601String();
 
-    // Calcular total de la factura
-    double totalInvoice = 0;
-    List<Map<String, dynamic>> invoiceItems = [];
-
-    for (var item in items) {
-      final productId = item['product_id'] as int;
-      final quantity = item['quantity'] as int;
-
-      final products = await db.query(
-        'products',
-        where: 'id = ?',
-        whereArgs: [productId],
-      );
-
-      if (products.isEmpty) {
-        throw Exception('Producto no encontrado: $productId');
-      }
-
-      final product = products.first;
-      final double unitPrice = (product['price'] as num).toDouble();
-      final double total = unitPrice * quantity;
-
-      totalInvoice += total;
-
-      invoiceItems.add({
-        'product_id': productId,
-        'quantity': quantity,
-        'price': unitPrice,
-        'total': total,
-      });
-    }
-
-    // Insertar la factura
+    // Insertar factura
     final invoiceId = await db.insert('invoices', {
       'customer_id': customerId,
       'seller_id': sellerId,
-      'date': dateStr,
-      'total': totalInvoice,
+      'date': DateTime.now().toIso8601String(),
+      'total': total,
     });
 
-    // Insertar los items de la factura
-    for (var item in invoiceItems) {
-      await db.insert('invoice_items', {...item, 'invoice_id': invoiceId});
+    // Insertar items
+    for (var item in items) {
+      await db.insert('invoice_items', {
+        'invoice_id': invoiceId,
+        'product_id': item['product_id'],
+        'quantity': item['quantity'],
+        'price': item['price'],
+        'total': item['total'],
+      });
     }
 
     return invoiceId;
@@ -169,12 +143,6 @@ class DBHelper {
       where: 'invoice_id = ?',
       whereArgs: [invoiceId],
     );
-  }
-
-  static Future<void> clearInvoices() async {
-    final db = await getDb();
-    await db.delete('invoice_items');
-    await db.delete('invoices');
   }
 
   static Future<List<Map<String, dynamic>>> getInvoicesFiltered({
@@ -219,29 +187,29 @@ class DBHelper {
     );
   }
 
-  static Future<Map<String, dynamic>?> getCustomerById(int id) async {
-    final db = await getDb();
-    final result = await db.query(
-      'customers', // nombre de tu tabla de clientes
-      where: 'id = ?', // condición
-      whereArgs: [id], // argumentos para la condición
-      limit: 1, // solo queremos un registro
-    );
-
-    if (result.isNotEmpty) {
-      return result.first; // devuelve el primer registro encontrado
-    } else {
-      return null; // si no existe, devuelve null
-    }
-  }
-
   // ---------- CLIENTES ----------
   static Future<List<Map<String, dynamic>>> getCustomers() async {
     final db = await getDb();
     return db.query('customers', orderBy: 'id ASC');
   }
 
-  static Future<int> insertCustomer(Map<String, dynamic> customer) async {
+  static Future<Map<String, dynamic>?> getCustomerById(int id) async {
+    final db = await getDb();
+    final result = await db.query(
+      'customers',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return result.first;
+    } else {
+      return null;
+    }
+  }
+
+  static Future<int> createCustomer(Map<String, dynamic> customer) async {
     final db = await getDb();
     return db.insert('customers', customer);
   }
@@ -265,7 +233,7 @@ class DBHelper {
     return db.query('sellers', orderBy: 'id ASC');
   }
 
-  static Future<int> insertSeller(Map<String, dynamic> seller) async {
+  static Future<int> createSeller(Map<String, dynamic> seller) async {
     final db = await getDb();
     return db.insert('sellers', seller);
   }

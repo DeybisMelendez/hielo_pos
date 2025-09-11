@@ -65,7 +65,7 @@ class _SellerScreenState extends State<SellerScreen> {
               if (name.isEmpty) return;
 
               if (seller == null) {
-                await DBHelper.insertSeller({
+                await DBHelper.createSeller({
                   'name': name,
                   'phone': phone,
                   'email': email,

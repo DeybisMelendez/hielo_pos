@@ -47,11 +47,11 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     final invoiceData = invoices.first;
 
     final cust = invoiceData['customer_id'] != null
-        ? await DBHelper.getCustomerById(invoiceData['customer_id'] as int)
+        ? await DBHelper.getCustomer(invoiceData['customer_id'] as int)
         : null;
 
     final sell = invoiceData['seller_id'] != null
-        ? await DBHelper.getSellerById(invoiceData['seller_id'] as int)
+        ? await DBHelper.getSeller(invoiceData['seller_id'] as int)
         : null;
 
     final rawInvoiceItems = await DBHelper.getInvoiceItems(widget.invoiceId);

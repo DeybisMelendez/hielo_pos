@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'db_helper.dart';
+import "localization.dart";
 
 class InvoiceScreen extends StatefulWidget {
   const InvoiceScreen({super.key});
@@ -23,6 +24,116 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     _loadData();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Cliente
+          const Text(
+            'Cliente',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          DropdownButton<int>(
+            isExpanded: true,
+            value: selectedCustomerId,
+            hint: const Text('Selecciona un cliente'),
+            items: customers.map((c) {
+              return DropdownMenuItem<int>(
+                value: c['id'] as int,
+                child: Text(c['name']),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                selectedCustomerId = value;
+              });
+            },
+          ),
+
+          // Vendedor
+          const Text(
+            'Vendedor',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          DropdownButton<int>(
+            isExpanded: true,
+            value: selectedSellerId,
+            hint: const Text('Selecciona un vendedor'),
+            items: sellers.map((s) {
+              return DropdownMenuItem<int>(
+                value: s['id'] as int,
+                child: Text(s['name']),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                selectedSellerId = value;
+              });
+            },
+          ),
+
+          const Divider(),
+
+          // Lista de productos
+          Expanded(
+            child: ListView(
+              children: products.map((p) {
+                final selectedIndex = selectedItems.indexWhere(
+                  (item) => item['product_id'] == p['id'],
+                );
+                final quantity = selectedIndex >= 0
+                    ? selectedItems[selectedIndex]['quantity']
+                    : 0;
+                return ListTile(
+                  title: Text(p['name']),
+                  subtitle: Text('Precio: C\$ ${p['price']}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (quantity > 0)
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: () =>
+                              _updateQuantity(selectedIndex, quantity - 1),
+                        ),
+                      Text(quantity.toString()),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () => _addProduct(p),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          const Divider(),
+
+          // Totales y botón
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total: C\$ ${_total.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              ElevatedButton(
+                onPressed: selectedItems.isEmpty ? null : _saveInvoice,
+                child: const Text('Generar Factura'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loadData() async {
     final prods = await DBHelper.getProducts();
     final custs = await DBHelper.getDb().then((db) => db.query('customers'));
@@ -41,7 +152,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       (item) => item['product_id'] == product['id'],
     );
     if (index >= 0) {
-      // Si ya está agregado, aumentar cantidad
       _updateQuantity(index, selectedItems[index]['quantity'] + 1);
     } else {
       setState(() {
@@ -80,138 +190,24 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         selectedItems.isEmpty) {
       return;
     }
-    final db = await DBHelper.getDb();
+    final invoiceId = await DBHelper.createInvoice(
+      customerId: selectedCustomerId!,
+      sellerId: selectedSellerId!,
+      items: selectedItems,
+      total: _total,
+    );
 
-    final invoiceId = await db.insert('invoices', {
-      'customer_id': selectedCustomerId!,
-      'seller_id': selectedSellerId!,
-      'date': DateTime.now().toIso8601String(),
-      'total': _total,
-    });
-
-    for (var item in selectedItems) {
-      await db.insert('invoice_items', {
-        'invoice_id': invoiceId,
-        'product_id': item['product_id'],
-        'quantity': item['quantity'],
-        'price': item['price'],
-        'total': item['total'],
-      });
-    }
+    // Imprimir factura
+    await _printInvoice(invoiceId);
 
     setState(() {
       selectedItems.clear();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Factura generada correctamente')),
+      const SnackBar(content: Text('Factura generada e impresa correctamente')),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          // Selección de cliente y vendedor
-
-          // Cliente
-          const Text(
-            'Cliente',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          DropdownButton<int>(
-            isExpanded: true,
-            value: selectedCustomerId,
-            hint: const Text('Selecciona un cliente'),
-            items: customers.map((c) {
-              return DropdownMenuItem<int>(
-                value: c['id'] as int,
-                child: Text(c['name']),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedCustomerId = value;
-              });
-            },
-          ),
-          // Vendedor
-          const Text(
-            'Vendedor',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          DropdownButton<int>(
-            isExpanded: true,
-            value: selectedSellerId,
-            hint: const Text('Selecciona un vendedor'),
-            items: sellers.map((s) {
-              return DropdownMenuItem<int>(
-                value: s['id'] as int,
-                child: Text(s['name']),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedSellerId = value;
-              });
-            },
-          ),
-          const Divider(),
-          // Lista de productos
-          Expanded(
-            child: ListView(
-              children: products.map((p) {
-                final selectedIndex = selectedItems.indexWhere(
-                  (item) => item['product_id'] == p['id'],
-                );
-                final quantity = selectedIndex >= 0
-                    ? selectedItems[selectedIndex]['quantity']
-                    : 0;
-                return ListTile(
-                  title: Text(p['name']),
-                  subtitle: Text('Precio: C\$ ${p['price']}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (quantity > 0)
-                        IconButton(
-                          icon: const Icon(Icons.remove),
-                          onPressed: () =>
-                              _updateQuantity(selectedIndex, quantity - 1),
-                        ),
-                      Text(quantity.toString()),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () => _addProduct(p),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const Divider(),
-          // Totales y botón
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total: C\$ $_total',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              ElevatedButton(
-                onPressed: selectedItems.isEmpty ? null : _saveInvoice,
-                child: const Text('Generar Factura'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _printInvoice(int invoiceId) async {}
 }

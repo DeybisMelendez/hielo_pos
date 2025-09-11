@@ -58,7 +58,7 @@ class _ProductScreenState extends State<ProductScreen> {
               if (name.isEmpty || price <= 0) return;
 
               if (product == null) {
-                await DBHelper.insertProduct({'name': name, 'price': price});
+                await DBHelper.createProduct({'name': name, 'price': price});
               } else {
                 await DBHelper.updateProduct(product['id'], {
                   'name': name,
