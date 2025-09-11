@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'db_helper.dart';
 import "localization.dart";
 
-class InvoiceScreen extends StatefulWidget {
-  const InvoiceScreen({super.key});
+class CreateInvoiceScreen extends StatefulWidget {
+  const CreateInvoiceScreen({super.key});
 
   @override
-  State<InvoiceScreen> createState() => _InvoiceScreenState();
+  State<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
 }
 
-class _InvoiceScreenState extends State<InvoiceScreen> {
+class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   List<Map<String, dynamic>> products = [];
   List<Map<String, dynamic>> customers = [];
   List<Map<String, dynamic>> sellers = [];

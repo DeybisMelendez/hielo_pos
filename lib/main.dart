@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'invoice_screen.dart';
+import 'create_invoice_screen.dart';
 import 'product_screen.dart';
 import 'invoice_detail_screen.dart';
 import 'invoice_history_screen.dart';
@@ -20,8 +20,10 @@ class HieloPosApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/invoice',
       routes: {
-        '/invoice': (context) =>
-            const BaseScreen(title: 'Facturas', child: InvoiceScreen()),
+        '/create-invoice': (context) => const BaseScreen(
+          title: 'Crear Factura',
+          child: CreateInvoiceScreen(),
+        ),
         '/products': (context) =>
             const BaseScreen(title: 'Productos', child: ProductScreen()),
         '/invoice_detail': (context) {
@@ -73,7 +75,7 @@ class BaseScreen extends StatelessWidget {
               leading: const Icon(Icons.receipt),
               title: const Text('Facturas'),
               onTap: () {
-                Navigator.pushReplacementNamed(context, '/invoice');
+                Navigator.pushReplacementNamed(context, '/create-invoice');
               },
             ),
             ListTile(
