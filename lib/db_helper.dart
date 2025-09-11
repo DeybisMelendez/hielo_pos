@@ -17,7 +17,7 @@ class DBHelper {
           CREATE TABLE products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            price REAL NOT NULL
+            price REAL NOT NULL,
           )
         ''');
 
@@ -25,39 +25,37 @@ class DBHelper {
           CREATE TABLE customers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            address TEXT,
-            phone TEXT,
-            email TEXT
           )
       ''');
 
         await db.execute('''
           CREATE TABLE sellers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
           )
         ''');
 
         await db.execute('''
           CREATE TABLE invoices (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            customer_id INTEGER,
-            seller_id INTEGER,
-            date TEXT,
-            total REAL,
+            customer_id INTEGER NOT NULL,
+            seller_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            total REAL NOT NULL,
             FOREIGN KEY(customer_id) REFERENCES customers(id),
-            FOREIGN KEY(seller_id) REFERENCES sellers(id)
+            FOREIGN KEY(seller_id) REFERENCES sellers(id),
+            is_cancelled INTEGER NOT NULL DEFAULT 0 CHECK (is_cancelled IN (0, 1)),
           )
         ''');
 
         await db.execute('''
           CREATE TABLE invoice_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER,
-            invoice_id INTEGER,
-            quantity INTEGER,
-            price REAL,
-            total REAL,
+            invoice_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            quantity INTEGER NOT NULL,
+            price REAL NOT NULL,
+            total REAL NOT NULL,
             FOREIGN KEY(product_id) REFERENCES products(id),
             FOREIGN KEY(invoice_id) REFERENCES invoices(id)
           )
@@ -193,7 +191,7 @@ class DBHelper {
     return db.query('customers', orderBy: 'id ASC');
   }
 
-  static Future<Map<String, dynamic>?> getCustomerById(int id) async {
+  static Future<Map<String, dynamic>?> getCustomer(int id) async {
     final db = await getDb();
     final result = await db.query(
       'customers',
@@ -248,7 +246,7 @@ class DBHelper {
     return db.delete('sellers', where: 'id = ?', whereArgs: [id]);
   }
 
-  static Future<Map<String, dynamic>?> getSellerById(int id) async {
+  static Future<Map<String, dynamic>?> getSeller(int id) async {
     final db = await getDb();
     final result = await db.query('sellers', where: 'id = ?', whereArgs: [id]);
     return result.isNotEmpty ? result.first : null;
