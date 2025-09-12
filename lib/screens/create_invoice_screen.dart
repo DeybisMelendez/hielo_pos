@@ -19,7 +19,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   List<Map<String, dynamic>> selectedItems = [];
   int? selectedCustomerId;
   int? selectedSellerId;
-  ReceiptController? controller;
 
   @override
   void initState() {
@@ -49,9 +48,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               );
             }).toList(),
             onChanged: (value) {
-              setState(() {
-                selectedCustomerId = value;
-              });
+              setState(() => selectedCustomerId = value);
             },
           ),
 
@@ -71,9 +68,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               );
             }).toList(),
             onChanged: (value) {
-              setState(() {
-                selectedSellerId = value;
-              });
+              setState(() => selectedSellerId = value);
             },
           ),
 
@@ -171,9 +166,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   void _updateQuantity(int index, int quantity) {
     if (quantity <= 0) {
-      setState(() {
-        selectedItems.removeAt(index);
-      });
+      setState(() => selectedItems.removeAt(index));
     } else {
       setState(() {
         selectedItems[index]['quantity'] = quantity;
@@ -188,17 +181,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _saveInvoice() async {
-    // Validación básica
-    if (selectedCustomerId == null) {
+    if (selectedCustomerId == null || selectedSellerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe seleccionar un cliente')),
-      );
-      return;
-    }
-
-    if (selectedSellerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe seleccionar un vendedor')),
+        const SnackBar(content: Text('Debe seleccionar cliente y vendedor')),
       );
       return;
     }
@@ -211,7 +196,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     }
 
     try {
-      // Seleccionar impresora antes de crear la factura
       final device = await FlutterBluetoothPrinter.selectDevice(context);
       if (device == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -220,7 +204,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         return;
       }
 
-      // Guardar factura en la base de datos
       int invoiceId = await DBHelper.createInvoice(
         customerId: selectedCustomerId!,
         sellerId: selectedSellerId!,
@@ -228,13 +211,35 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         total: _total,
       );
 
-      // Imprimir factura (original y copia)
-      await _printInvoice(invoiceId, device);
+      // Imprimir ORIGINAL
+      await _printPage(invoiceId, 'ORIGINAL', device);
 
-      // Limpiar selección de productos
-      setState(() {
-        selectedItems.clear();
-      });
+      // Preguntar si imprimir copia
+      bool printCopy =
+          await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Impresión de Copia"),
+              content: const Text("¿Desea imprimir una copia de la factura?"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("No"),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Sí, imprimir copia"),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+
+      if (printCopy) {
+        await _printPage(invoiceId, 'COPIA', device);
+      }
+
+      setState(() => selectedItems.clear());
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -242,49 +247,32 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Ocurrió un error al generar o imprimir la factura: $e',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  Future<void> _printInvoice(int invoiceId, BluetoothDevice device) async {
-    try {
-      await _printPage(invoiceId, 'ORIGINAL', device);
-    } catch (e) {
-      debugPrint('Error al imprimir original: $e');
-    }
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    try {
-      await _printPage(invoiceId, 'COPIA', device);
-    } catch (e) {
-      debugPrint('Error al imprimir copia: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Hubo un error al imprimir la copia: $e')),
-      );
-    }
-  }
-
-  // _printPage ahora usa la impresora ya seleccionada
   Future<void> _printPage(
     int invoiceId,
     String type,
     BluetoothDevice device,
   ) async {
-    if (selectedCustomerId == null ||
-        selectedSellerId == null ||
-        selectedItems.isEmpty) {
-      throw Exception('Datos de factura incompletos');
-    }
+    final StringBuffer buffer = StringBuffer();
 
-    final buffer = StringBuffer();
+    // Datos de la empresa
+    buffer.writeln(Commands.setAlignmentCenter);
+    buffer.writeln('HIELO MOTASTEPE');
+    buffer.writeln(
+      'Autohotel Petate 500 mts al sur,\nLotificación Santa María, segunda etapa',
+    );
+    buffer.writeln('Tel: 8814-4902');
+    buffer.writeln('');
     buffer.writeln('*** FACTURA #$invoiceId - $type ***');
+    buffer.writeln('');
+    buffer.writeln(Commands.setAlignmentLeft);
+
+    // Datos del cliente y vendedor
     buffer.writeln(
       'Cliente: ${customers.firstWhere((c) => c["id"] == selectedCustomerId)["name"]}',
     );
@@ -293,13 +281,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
     buffer.writeln('--------------------------------');
 
+    // Cabecera de tabla
+    buffer.writeln('Producto              Cant  P.Unit   Total');
+    buffer.writeln('--------------------------------');
+
     for (var item in selectedItems) {
-      final name = item['name'];
-      final qty = item['quantity'];
-      final price = item['price'];
-      final total = item['total'];
-      buffer.writeln('$name  x$qty   C\$${price.toStringAsFixed(2)}');
-      buffer.writeln('                  C\$${total.toStringAsFixed(2)}');
+      String name = (item['name'] as String).padRight(18).substring(0, 18);
+      String qty = 'x${item['quantity']}'.padRight(5);
+      String price = 'C\$${item['price'].toStringAsFixed(2)}'.padRight(8);
+      String total = 'C\$${item['total'].toStringAsFixed(2)}';
+
+      buffer.writeln('$name $qty $price $total');
     }
 
     buffer.writeln('--------------------------------');
@@ -307,19 +299,35 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     buffer.writeln('');
     buffer.writeln('¡Gracias por su compra!');
     buffer.writeln('');
-    buffer.writeln('');
-    buffer.writeln('');
 
-    BytesBuilder builder = BytesBuilder();
+    final BytesBuilder builder = BytesBuilder();
+    builder.add(Commands.initialize);
+
+    // Selecciona code page Latin1
+    builder.add(Uint8List.fromList([0x1B, 0x74, 16]));
+
+    // Centrar encabezado de empresa
+    builder.add(Commands.setAlignmentCenter);
+    builder.add(
+      latin1.encode(
+        'HIELO MOTASTEPE\nAutohotel Petate 500 mts al sur,\nLotificación Santa María, segunda etapa\nTel: 8814-4902\n\n',
+      ),
+    );
+    builder.add(Commands.setAlignmentLeft);
+
+    // Resto de la factura
     builder.add(latin1.encode(buffer.toString()));
-    builder.add(List.filled(4, 0x0A));
+
+    // Corte de papel
+    builder.add(Commands.lineFeed);
     builder.add(Commands.cutPaper);
-    Uint8List bytesToSend = builder.toBytes();
+
+    final Uint8List bytesToSend = builder.toBytes();
 
     await FlutterBluetoothPrinter.printBytes(
-      data: bytesToSend,
       address: device.address,
-      keepConnected: true,
+      data: bytesToSend,
+      keepConnected: false,
     );
   }
 }
