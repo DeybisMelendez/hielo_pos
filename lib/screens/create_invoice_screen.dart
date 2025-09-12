@@ -310,13 +310,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     buffer.writeln('');
     buffer.writeln('');
 
-    Uint8List bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
-    bytes.addAll(Commands.cutPaper);
+    BytesBuilder builder = BytesBuilder();
+    builder.add(latin1.encode(buffer.toString()));
+    builder.add(List.filled(4, 0x0A));
+    builder.add(Commands.cutPaper);
+    Uint8List bytesToSend = builder.toBytes();
 
     await FlutterBluetoothPrinter.printBytes(
-      data: bytes,
+      data: bytesToSend,
       address: device.address,
-      keepConnected: false,
+      keepConnected: true,
     );
   }
 }
