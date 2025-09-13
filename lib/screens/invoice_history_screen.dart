@@ -74,7 +74,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         if (isStart) {
           startDate = picked;
         } else {
-          endDate = picked;
+          endDate = picked.add(
+            const Duration(hours: 23, minutes: 59, seconds: 59),
+          );
         }
         currentPage = 0;
       });
@@ -162,7 +164,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   child: ElevatedButton(
                     onPressed: () => selectDate(context, true),
                     child: Text(
-                      'Desde: ${startDate != null ? DateFormat.yMd().format(startDate!) : 'Todos'}',
+                      'Desde: ${startDate != null ? Localization().formatDate(startDate!) : 'Todos'}',
                     ),
                   ),
                 ),
@@ -171,7 +173,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   child: ElevatedButton(
                     onPressed: () => selectDate(context, false),
                     child: Text(
-                      'Hasta: ${endDate != null ? DateFormat.yMd().format(endDate!) : 'Todos'}',
+                      'Hasta: ${endDate != null ? Localization().formatDate(endDate!) : 'Todos'}',
                     ),
                   ),
                 ),
