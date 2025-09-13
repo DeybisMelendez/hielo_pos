@@ -261,16 +261,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     final StringBuffer buffer = StringBuffer();
 
     // Datos de la empresa
-    buffer.writeln(Commands.setAlignmentCenter);
     buffer.writeln('HIELO MOTASTEPE');
     buffer.writeln(
-      'Autohotel Petate 500 mts al sur,\nLotificación Santa María, segunda etapa',
+      'Autohotel Petate 500 mts al sur,\nLotificación Santa María,\nsegunda etapa. Managua, Nicaragua',
     );
     buffer.writeln('Tel: 8814-4902');
     buffer.writeln('');
     buffer.writeln('*** FACTURA #$invoiceId - $type ***');
     buffer.writeln('');
-    buffer.writeln(Commands.setAlignmentLeft);
 
     // Datos del cliente y vendedor
     buffer.writeln(
@@ -305,19 +303,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
     // Selecciona code page Latin1
     builder.add(Uint8List.fromList([0x1B, 0x74, 16]));
-
-    // Centrar encabezado de empresa
-    builder.add(Commands.setAlignmentCenter);
-    builder.add(
-      latin1.encode(
-        'HIELO MOTASTEPE\nAutohotel Petate 500 mts al sur,\nLotificación Santa María, segunda etapa\nTel: 8814-4902\n\n',
-      ),
-    );
-    builder.add(Commands.setAlignmentLeft);
-
-    // Resto de la factura
     builder.add(latin1.encode(buffer.toString()));
-
     // Corte de papel
     builder.add(Commands.lineFeed);
     builder.add(Commands.cutPaper);
@@ -327,7 +313,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     await FlutterBluetoothPrinter.printBytes(
       address: device.address,
       data: bytesToSend,
-      keepConnected: false,
+      keepConnected: true,
     );
   }
 }
