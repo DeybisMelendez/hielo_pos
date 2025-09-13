@@ -121,3 +121,74 @@ Future<void> printInvoice(BluetoothDevice device, InvoiceData invoice) async {
     keepConnected: true,
   );
 }
+
+/// Imprime un reporte de varias facturas
+Future<void> printInvoiceReport(
+  BluetoothDevice device,
+  List<Map<String, dynamic>> invoices,
+) async {
+  final BytesBuilder builder = BytesBuilder();
+  final nowStr = Localization().formatDate(DateTime.now());
+  final grandTotal = invoices.fold<double>(
+    0,
+    (sum, inv) => sum + (inv['total'] as double? ?? 0),
+  );
+
+  // Inicializa la impresora y configura Latin1
+  builder.add(Commands.initialize);
+  builder.add(Uint8List.fromList([0x1B, 0x74, 16])); // Latin1 codepage
+
+  // Encabezado del reporte
+  builder.add(Commands.setAlignmentCenter);
+  builder.add(
+    latin1.encode(
+      'Hielo Motastepe\n'
+      'Reporte de Facturas\n'
+      'Fecha: $nowStr\n\n',
+    ),
+  );
+
+  builder.add(Commands.setAlignmentLeft);
+  builder.add(latin1.encode('--------------------------------\n'));
+
+  for (var inv in invoices) {
+    final customerName = inv['customer_name'] ?? 'Desconocido';
+    final sellerName = inv['seller_name'] ?? 'Desconocido';
+    final dateStr = inv['date'] != null
+        ? Localization().formatDate(DateTime.parse(inv['date']))
+        : '';
+    final totalStr = inv['total']?.toStringAsFixed(2) ?? '0.00';
+
+    // Ajustamos ancho para que quede alineado
+    builder.add(
+      latin1.encode(
+        'Fact # ${inv['id']} - $customerName\n'
+        'Vendedor: ${sellerName.padRight(12)}\n'
+        'Fecha: $dateStr\n'
+        'Total: C\$ $totalStr\n'
+        '--------------------------------\n',
+      ),
+    );
+  }
+  builder.add(
+    latin1.encode('Gran Total: C\$${grandTotal.toStringAsFixed(2)}\n'),
+  );
+  builder.add(latin1.encode('Cantidad de facturas: ${invoices.length}\n'));
+
+  // Pie
+  builder.add(Commands.setAlignmentCenter);
+  builder.add(latin1.encode('Fin del reporte\n\n'));
+  builder.add(Commands.setAlignmentLeft);
+
+  // Corte de papel
+  builder.add(Commands.lineFeed);
+  builder.add(Commands.lineFeed);
+  builder.add(Commands.cutPaper);
+
+  // Enviar a la impresora
+  await FlutterBluetoothPrinter.printBytes(
+    address: device.address,
+    data: builder.toBytes(),
+    keepConnected: true,
+  );
+}

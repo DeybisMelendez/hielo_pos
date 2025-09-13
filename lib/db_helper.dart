@@ -61,10 +61,80 @@ class DBHelper {
           )
         ''');
 
-        await db.insert('products', {'name': 'Hielo 10 lb', 'price': 50});
-        await db.insert('products', {'name': 'Hielo 20 lb', 'price': 90});
-        await db.insert("customers", {'name': 'Cliente Genérico'});
-        await db.insert("sellers", {'name': 'Deybis Melendez'});
+        // --- Productos ---
+        final product1 = await db.insert('products', {
+          'name': 'Hielo 10 lb',
+          'price': 50,
+        });
+        final product2 = await db.insert('products', {
+          'name': 'Hielo 20 lb',
+          'price': 90,
+        });
+
+        // --- Clientes ---
+        final customer1 = await db.insert('customers', {
+          'name': 'Cliente Genérico',
+        });
+        final customer2 = await db.insert('customers', {'name': 'Empresa ABC'});
+
+        // --- Vendedores ---
+        final seller1 = await db.insert('sellers', {'name': 'Deybis Melendez'});
+        final seller2 = await db.insert('sellers', {
+          'name': 'Vendedor Ejemplo',
+        });
+
+        // --- Facturas de ejemplo ---
+        final invoice1 = await db.insert('invoices', {
+          'customer_id': customer1,
+          'seller_id': seller1,
+          'date': DateTime.now()
+              .subtract(const Duration(days: 1))
+              .toIso8601String(),
+          'total': 100,
+        });
+
+        final invoice2 = await db.insert('invoices', {
+          'customer_id': customer2,
+          'seller_id': seller2,
+          'date': DateTime.now()
+              .subtract(const Duration(days: 2))
+              .toIso8601String(),
+          'total': 180,
+        });
+
+        final invoice3 = await db.insert('invoices', {
+          'customer_id': customer1,
+          'seller_id': seller2,
+          'date': DateTime.now()
+              .subtract(const Duration(days: 3))
+              .toIso8601String(),
+          'total': 50,
+        });
+
+        // --- Items de las facturas ---
+        await db.insert('invoice_items', {
+          'invoice_id': invoice1,
+          'product_id': product1,
+          'quantity': 2,
+          'price': 50,
+          'total': 100,
+        });
+
+        await db.insert('invoice_items', {
+          'invoice_id': invoice2,
+          'product_id': product2,
+          'quantity': 2,
+          'price': 90,
+          'total': 180,
+        });
+
+        await db.insert('invoice_items', {
+          'invoice_id': invoice3,
+          'product_id': product1,
+          'quantity': 1,
+          'price': 50,
+          'total': 50,
+        });
       },
     );
   }
@@ -150,6 +220,8 @@ class DBHelper {
     DateTime? endDate,
     double? minTotal,
     double? maxTotal,
+    int? customerId,
+    int? sellerId,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -175,6 +247,16 @@ class DBHelper {
     if (maxTotal != null) {
       where += '${where.isEmpty ? '' : ' AND '}total <= ?';
       whereArgs.add(maxTotal);
+    }
+
+    if (customerId != null) {
+      where += '${where.isEmpty ? '' : ' AND '}customer_id = ?';
+      whereArgs.add(customerId);
+    }
+
+    if (sellerId != null) {
+      where += '${where.isEmpty ? '' : ' AND '}seller_id = ?';
+      whereArgs.add(sellerId);
     }
 
     return db.query(

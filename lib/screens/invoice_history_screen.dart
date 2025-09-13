@@ -1,7 +1,9 @@
 // invoice_history_screen.dart
 import 'package:flutter/material.dart';
-import '../db_helper.dart';
 import 'package:intl/intl.dart';
+import '../db_helper.dart';
+import '../invoice_printer.dart';
+import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
   const InvoiceHistoryScreen({super.key});
@@ -15,8 +17,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   DateTime? endDate;
   double? minTotal;
   double? maxTotal;
+  int? selectedCustomerId;
+  int? selectedSellerId;
 
   List<Map<String, dynamic>> invoices = [];
+  List<Map<String, dynamic>> customers = [];
+  List<Map<String, dynamic>> sellers = [];
   int currentPage = 0;
   final int pageSize = 20;
 
@@ -25,7 +31,17 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    fetchFilters();
     fetchInvoices();
+  }
+
+  Future<void> fetchFilters() async {
+    final c = await DBHelper.getCustomers();
+    final s = await DBHelper.getSellers();
+    setState(() {
+      customers = c;
+      sellers = s;
+    });
   }
 
   Future<void> fetchInvoices() async {
@@ -37,6 +53,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       maxTotal: maxTotal,
       limit: pageSize,
       offset: offset,
+      customerId: selectedCustomerId,
+      sellerId: selectedSellerId,
     );
     setState(() {
       invoices = data;
@@ -69,6 +87,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       endDate = null;
       minTotal = null;
       maxTotal = null;
+      selectedCustomerId = null;
+      selectedSellerId = null;
       currentPage = 0;
     });
     fetchInvoices();
@@ -87,6 +107,37 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         currentPage--;
       });
       fetchInvoices();
+    }
+  }
+
+  Future<void> reprintInvoice(Map<String, dynamic> inv) async {
+    try {
+      final customer = await DBHelper.getCustomer(inv['customer_id']);
+      final seller = await DBHelper.getSeller(inv['seller_id']);
+      final items = await DBHelper.getInvoiceItems(inv['id']);
+
+      final invoiceData = InvoiceData(
+        id: inv['id'],
+        type: "REIMPRESIÓN",
+        customerName: customer?['name'] ?? "Desconocido",
+        sellerName: seller?['name'] ?? "Desconocido",
+        items: items,
+        total: inv['total'],
+        createdAt: DateTime.parse(inv['date']),
+        printedAt: DateTime.now(),
+      );
+
+      final device = await FlutterBluetoothPrinter.selectDevice(context);
+      if (device != null) {
+        await printInvoice(device, invoiceData);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Factura reimpresa correctamente")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al reimprimir: $e")));
     }
   }
 
@@ -168,13 +219,64 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               ],
             ),
             const SizedBox(height: 8),
+            // --- Filtro por cliente y vendedor ---
             Row(
               children: [
-                ElevatedButton(
-                  onPressed: clearFilters,
-                  child: const Text('Limpiar filtros'),
+                Expanded(
+                  child: DropdownButtonFormField<int?>(
+                    value: selectedCustomerId,
+                    decoration: const InputDecoration(
+                      labelText: "Cliente",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: customers
+                        .map(
+                          (c) => DropdownMenuItem<int?>(
+                            value: c['id'],
+                            child: Text(c['name']),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        selectedCustomerId = val;
+                        currentPage = 0;
+                      });
+                      fetchInvoices();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<int?>(
+                    value: selectedSellerId,
+                    decoration: const InputDecoration(
+                      labelText: "Vendedor",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: sellers
+                        .map(
+                          (s) => DropdownMenuItem<int?>(
+                            value: s['id'],
+                            child: Text(s['name']),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        selectedSellerId = val;
+                        currentPage = 0;
+                      });
+                      fetchInvoices();
+                    },
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: clearFilters,
+              child: const Text('Limpiar filtros'),
             ),
             const SizedBox(height: 12),
             // --- LISTA DE FACTURAS ---
@@ -186,39 +288,39 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       itemBuilder: (context, index) {
                         final inv = invoices[index];
 
-                        return FutureBuilder<Map<String, dynamic>?>(
-                          future: DBHelper.getCustomer(inv['customer_id']),
-                          builder: (context, snapshot) {
-                            String customerName = 'Desconocido';
-                            if (snapshot.connectionState ==
-                                    ConnectionState.done &&
-                                snapshot.hasData) {
-                              customerName = snapshot.data!['name'];
-                            }
-
-                            return Card(
-                              child: ListTile(
-                                title: Text('# ${inv['id']} - $customerName'),
-                                subtitle: Text(
-                                  'Fecha: ${DateFormat.yMd().format(DateTime.parse(inv['date']))}',
-                                ),
-                                trailing: Text(
+                        return Card(
+                          child: ListTile(
+                            title: Text(
+                              '# ${inv['id']} - Cliente ${inv['customer_id']}',
+                            ),
+                            subtitle: Text(
+                              'Fecha: ${DateFormat.yMd().format(DateTime.parse(inv['date']))}',
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
                                   "C\$ ${inv['total']}",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
                                 ),
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/invoice_detail',
-                                    arguments: inv['id'] as int,
-                                  );
-                                },
-                              ),
-                            );
-                          },
+                                IconButton(
+                                  icon: const Icon(Icons.print),
+                                  tooltip: "Reimprimir",
+                                  onPressed: () => reprintInvoice(inv),
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/invoice_detail',
+                                arguments: inv['id'] as int,
+                              );
+                            },
+                          ),
                         );
                       },
                     ),
