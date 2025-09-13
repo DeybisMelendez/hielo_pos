@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../db_helper.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
-import 'dart:convert';
-import 'dart:typed_data';
 import '../invoice_printer.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
