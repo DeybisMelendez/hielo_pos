@@ -18,6 +18,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   List<Map<String, dynamic>> selectedItems = [];
   int? selectedCustomerId;
   int? selectedSellerId;
+  bool isCredit = false;
 
   @override
   void initState() {
@@ -31,6 +32,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Facturar al crédito",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Switch(
+                value: isCredit,
+                onChanged: (value) => setState(() => isCredit = value),
+              ),
+            ],
+          ),
           // Cliente
           const Text(
             'Cliente',
@@ -208,6 +222,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         sellerId: selectedSellerId!,
         items: selectedItems,
         total: _total,
+        isCredit: isCredit,
       );
 
       final invoiceId = invoice['id'];

@@ -42,7 +42,9 @@ class DBHelper {
             seller_id INTEGER NOT NULL,
             date TEXT NOT NULL,
             total REAL NOT NULL,
-            is_cancelled INTEGER NOT NULL DEFAULT 0 CHECK (is_cancelled IN (0,1)),
+            is_credit INTEGER NOT NULL DEFAULT 0 CHECK (is_credit IN (0,1)), -- 0: contado, 1: crédito
+            is_cancelled INTEGER NOT NULL DEFAULT 0 CHECK (is_cancelled IN (0,1)), -- 0: activa, 1: anulada
+            is_paid INTEGER NOT NULL DEFAULT 0 CHECK (is_paid IN (0,1)), -- 0: pendiente, 1: pagada
             FOREIGN KEY (customer_id) REFERENCES customers(id),
             FOREIGN KEY (seller_id) REFERENCES sellers(id)
           )
@@ -172,9 +174,9 @@ class DBHelper {
     required int sellerId,
     required double total,
     required List<Map<String, dynamic>> items,
+    bool isCredit = false,
   }) async {
     final db = await getDb();
-
     final createdAt = DateTime.now();
 
     // Insertar factura
@@ -183,6 +185,9 @@ class DBHelper {
       'seller_id': sellerId,
       'date': createdAt.toIso8601String(),
       'total': total,
+      'is_credit': isCredit ? 1 : 0,
+      'is_paid': isCredit ? 0 : 1, // si es contado, marcar como pagada
+      'is_cancelled': 0, // por defecto no anulada
     });
 
     // Insertar items

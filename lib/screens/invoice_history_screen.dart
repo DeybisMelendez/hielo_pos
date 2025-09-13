@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../db_helper.dart';
 import '../invoice_printer.dart';
+import '../localization.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
@@ -273,12 +274,26 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: clearFilters,
-              child: const Text('Limpiar filtros'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: clearFilters,
+                  child: const Text('Limpiar filtros'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    final device = await FlutterBluetoothPrinter.selectDevice(
+                      context,
+                    );
+                    if (device == null) return;
+                    await printInvoiceReport(device, invoices);
+                  },
+                  child: const Text('Imprimir reporte'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
             // --- LISTA DE FACTURAS ---
             Expanded(
               child: invoices.isEmpty
@@ -290,11 +305,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
 
                         return Card(
                           child: ListTile(
+                            isThreeLine: true,
                             title: Text(
-                              '# ${inv['id']} - Cliente ${inv['customer_id']}',
+                              '# ${inv['id']} - Cliente ${inv['customer_id']} - ${inv['is_credit'] == 1 ? 'Crédito' : 'Contado'}',
                             ),
                             subtitle: Text(
-                              'Fecha: ${DateFormat.yMd().format(DateTime.parse(inv['date']))}',
+                              'Fecha: ${Localization().formatDate(DateTime.parse(inv['date']))}\nVendedor ${inv['seller_id']}\nEstado: ${inv['is_cancelled'] == 1 ? 'Anulada' : (inv['is_paid'] == 1 ? 'Pagada' : 'Pendiente')}',
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
