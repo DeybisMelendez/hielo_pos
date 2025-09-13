@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
+import 'localization.dart';
 
 /// Modelo de datos para una factura
 class InvoiceData {
@@ -10,6 +11,8 @@ class InvoiceData {
   final String sellerName;
   final List<Map<String, dynamic>> items;
   final double total;
+  final DateTime createdAt;
+  final DateTime printedAt;
 
   InvoiceData({
     required this.id,
@@ -18,6 +21,8 @@ class InvoiceData {
     required this.sellerName,
     required this.items,
     required this.total,
+    required this.createdAt,
+    required this.printedAt,
   });
 
   /// Permite clonar un invoice cambiando solo algunos campos
@@ -28,6 +33,8 @@ class InvoiceData {
     String? sellerName,
     List<Map<String, dynamic>>? items,
     double? total,
+    DateTime? createdAt,
+    DateTime? printedAt,
   }) {
     return InvoiceData(
       id: id ?? this.id,
@@ -36,6 +43,8 @@ class InvoiceData {
       sellerName: sellerName ?? this.sellerName,
       items: items ?? this.items,
       total: total ?? this.total,
+      createdAt: createdAt ?? this.createdAt,
+      printedAt: printedAt ?? this.printedAt,
     );
   }
 }
@@ -43,6 +52,9 @@ class InvoiceData {
 /// Función reutilizable para imprimir facturas
 Future<void> printInvoice(BluetoothDevice device, InvoiceData invoice) async {
   final BytesBuilder builder = BytesBuilder();
+  final createdStr = Localization().formatDate(invoice.createdAt);
+
+  final printedStr = Localization().formatDate(invoice.printedAt);
 
   // Inicializa la impresora y configura Latin1
   builder.add(Commands.initialize);
@@ -63,8 +75,11 @@ Future<void> printInvoice(BluetoothDevice device, InvoiceData invoice) async {
     latin1.encode('*** FACTURA #${invoice.id} - ${invoice.type} ***\n\n'),
   );
 
-  // Datos de cliente y vendedor
+  builder.add(latin1.encode('$createdStr\n'));
   builder.add(Commands.setAlignmentLeft);
+  builder.add(latin1.encode('--------------------------------\n'));
+
+  // Datos de cliente y vendedor
   builder.add(latin1.encode('Cliente: ${invoice.customerName}\n'));
   builder.add(latin1.encode('Vendedor: ${invoice.sellerName}\n'));
   builder.add(latin1.encode('--------------------------------\n'));
@@ -90,6 +105,7 @@ Future<void> printInvoice(BluetoothDevice device, InvoiceData invoice) async {
 
   // Pie
   builder.add(Commands.setAlignmentCenter);
+  builder.add(latin1.encode('Impreso el: $printedStr\n'));
   builder.add(latin1.encode('¡Gracias por su compra!\n\n'));
   builder.add(Commands.setAlignmentLeft);
 

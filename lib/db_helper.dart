@@ -97,7 +97,7 @@ class DBHelper {
   }
 
   // Facturación
-  static Future<int> createInvoice({
+  static Future<Map<String, dynamic>> createInvoice({
     required int customerId,
     required int sellerId,
     required double total,
@@ -105,11 +105,13 @@ class DBHelper {
   }) async {
     final db = await getDb();
 
+    final createdAt = DateTime.now();
+
     // Insertar factura
     final invoiceId = await db.insert('invoices', {
       'customer_id': customerId,
       'seller_id': sellerId,
-      'date': DateTime.now().toIso8601String(),
+      'date': createdAt.toIso8601String(),
       'total': total,
     });
 
@@ -124,7 +126,7 @@ class DBHelper {
       });
     }
 
-    return invoiceId;
+    return {'id': invoiceId, 'createdAt': createdAt};
   }
 
   static Future<List<Map<String, dynamic>>> getInvoices() async {

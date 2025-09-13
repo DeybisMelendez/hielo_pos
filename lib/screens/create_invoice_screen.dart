@@ -203,18 +203,23 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         return;
       }
 
-      // Guardar en DB
-      final invoiceId = await DBHelper.createInvoice(
+      final invoice = await DBHelper.createInvoice(
         customerId: selectedCustomerId!,
         sellerId: selectedSellerId!,
         items: selectedItems,
         total: _total,
       );
 
+      final invoiceId = invoice['id'];
+      final createdAt = invoice['createdAt'] as DateTime;
+      final printedAt = DateTime.now();
+
       // Crear modelo InvoiceData para ORIGINAL
       final invoiceData = InvoiceData(
         id: invoiceId,
         type: 'ORIGINAL',
+        createdAt: createdAt,
+        printedAt: printedAt,
         customerName:
             customers.firstWhere((c) => c["id"] == selectedCustomerId)["name"]
                 as String,
