@@ -3,6 +3,7 @@ import '../db_helper.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import '../invoice_printer.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});
@@ -204,18 +205,33 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         return;
       }
 
-      int invoiceId = await DBHelper.createInvoice(
+      // Guardar en DB
+      final invoiceId = await DBHelper.createInvoice(
         customerId: selectedCustomerId!,
         sellerId: selectedSellerId!,
         items: selectedItems,
         total: _total,
       );
 
+      // Crear modelo InvoiceData para ORIGINAL
+      final invoiceData = InvoiceData(
+        id: invoiceId,
+        type: 'ORIGINAL',
+        customerName:
+            customers.firstWhere((c) => c["id"] == selectedCustomerId)["name"]
+                as String,
+        sellerName:
+            sellers.firstWhere((s) => s["id"] == selectedSellerId)["name"]
+                as String,
+        items: selectedItems,
+        total: _total,
+      );
+
       // Imprimir ORIGINAL
-      await _printPage(invoiceId, 'ORIGINAL', device);
+      await printInvoice(device, invoiceData);
 
       // Preguntar si imprimir copia
-      bool printCopy =
+      final printCopy =
           await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -236,7 +252,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           false;
 
       if (printCopy) {
-        await _printPage(invoiceId, 'COPIA', device);
+        await printInvoice(device, invoiceData.copyWith(type: 'COPIA'));
       }
 
       setState(() => selectedItems.clear());
@@ -251,69 +267,5 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
-  }
-
-  Future<void> _printPage(
-    int invoiceId,
-    String type,
-    BluetoothDevice device,
-  ) async {
-    final StringBuffer buffer = StringBuffer();
-
-    // Datos de la empresa
-    buffer.writeln('HIELO MOTASTEPE');
-    buffer.writeln(
-      'Autohotel Petate 500 mts al sur,\nLotificación Santa María,\nsegunda etapa. Managua, Nicaragua',
-    );
-    buffer.writeln('Tel: 8814-4902');
-    buffer.writeln('');
-    buffer.writeln('*** FACTURA #$invoiceId - $type ***');
-    buffer.writeln('');
-
-    // Datos del cliente y vendedor
-    buffer.writeln(
-      'Cliente: ${customers.firstWhere((c) => c["id"] == selectedCustomerId)["name"]}',
-    );
-    buffer.writeln(
-      'Vendedor: ${sellers.firstWhere((s) => s["id"] == selectedSellerId)["name"]}',
-    );
-    buffer.writeln('--------------------------------');
-
-    // Cabecera de tabla
-    buffer.writeln('Producto              Cant  P.Unit   Total');
-    buffer.writeln('--------------------------------');
-
-    for (var item in selectedItems) {
-      String name = (item['name'] as String).padRight(18).substring(0, 18);
-      String qty = 'x${item['quantity']}'.padRight(5);
-      String price = 'C\$${item['price'].toStringAsFixed(2)}'.padRight(8);
-      String total = 'C\$${item['total'].toStringAsFixed(2)}';
-
-      buffer.writeln('$name $qty $price $total');
-    }
-
-    buffer.writeln('--------------------------------');
-    buffer.writeln('TOTAL: C\$${_total.toStringAsFixed(2)}');
-    buffer.writeln('');
-    buffer.writeln('¡Gracias por su compra!');
-    buffer.writeln('');
-
-    final BytesBuilder builder = BytesBuilder();
-    builder.add(Commands.initialize);
-
-    // Selecciona code page Latin1
-    builder.add(Uint8List.fromList([0x1B, 0x74, 16]));
-    builder.add(latin1.encode(buffer.toString()));
-    // Corte de papel
-    builder.add(Commands.lineFeed);
-    builder.add(Commands.cutPaper);
-
-    final Uint8List bytesToSend = builder.toBytes();
-
-    await FlutterBluetoothPrinter.printBytes(
-      address: device.address,
-      data: bytesToSend,
-      keepConnected: true,
-    );
   }
 }
