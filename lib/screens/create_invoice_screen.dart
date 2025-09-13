@@ -232,6 +232,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       // Crear modelo InvoiceData para ORIGINAL
       final invoiceData = InvoiceData(
         id: invoiceId,
+        isCancelled: false,
+        isPaid: !isCredit,
         type: 'ORIGINAL',
         createdAt: createdAt,
         printedAt: printedAt,

@@ -121,6 +121,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
 
       final invoiceData = InvoiceData(
         id: inv['id'],
+        isCancelled: inv['is_cancelled'] == 1,
+        isPaid: inv['is_paid'] == 1,
         type: "REIMPRESIÓN",
         customerName: customer?['name'] ?? "Desconocido",
         sellerName: seller?['name'] ?? "Desconocido",

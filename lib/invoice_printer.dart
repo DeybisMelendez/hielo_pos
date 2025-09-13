@@ -7,6 +7,8 @@ import 'localization.dart';
 class InvoiceData {
   final int id;
   final String type;
+  final bool isCancelled;
+  final bool isPaid;
   final String customerName;
   final String sellerName;
   final List<Map<String, dynamic>> items;
@@ -23,6 +25,8 @@ class InvoiceData {
     required this.total,
     required this.createdAt,
     required this.printedAt,
+    required this.isCancelled,
+    required this.isPaid,
   });
 
   /// Permite clonar un invoice cambiando solo algunos campos
@@ -35,6 +39,8 @@ class InvoiceData {
     double? total,
     DateTime? createdAt,
     DateTime? printedAt,
+    bool? isCancelled,
+    bool? isPaid,
   }) {
     return InvoiceData(
       id: id ?? this.id,
@@ -45,6 +51,8 @@ class InvoiceData {
       total: total ?? this.total,
       createdAt: createdAt ?? this.createdAt,
       printedAt: printedAt ?? this.printedAt,
+      isCancelled: isCancelled ?? this.isCancelled,
+      isPaid: isPaid ?? this.isPaid,
     );
   }
 }
@@ -74,7 +82,11 @@ Future<void> printInvoice(BluetoothDevice device, InvoiceData invoice) async {
   builder.add(
     latin1.encode('*** FACTURA #${invoice.id} - ${invoice.type} ***\n\n'),
   );
-
+  builder.add(
+    latin1.encode(
+      'Estado: ${invoice.isCancelled ? 'ANULADA' : (invoice.isPaid ? 'PAGADA' : 'PENDIENTE')}\n',
+    ),
+  );
   builder.add(latin1.encode('$createdStr\n'));
   builder.add(Commands.setAlignmentLeft);
   builder.add(latin1.encode('--------------------------------\n'));
@@ -128,7 +140,7 @@ Future<void> printInvoiceReport(
   List<Map<String, dynamic>> invoices,
 ) async {
   final BytesBuilder builder = BytesBuilder();
-  final nowStr = Localization().formatDate(DateTime.now());
+  final nowStr = Localization().formatDateAndTime(DateTime.now());
   final grandTotal = invoices.fold<double>(
     0,
     (sum, inv) => sum + (inv['total'] as double? ?? 0),
@@ -159,10 +171,10 @@ Future<void> printInvoiceReport(
         : '';
     final totalStr = inv['total']?.toStringAsFixed(2) ?? '0.00';
 
-    // Ajustamos ancho para que quede alineado
     builder.add(
       latin1.encode(
         'Fact # ${inv['id']} - $customerName\n'
+        'Estado: ${inv['is_cancelled'] == 1 ? 'ANULADA' : (inv['is_paid'] == 1 ? 'PAGADA' : 'PENDIENTE')}\n'
         'Vendedor: ${sellerName.padRight(12)}\n'
         'Fecha: $dateStr\n'
         'Total: C\$ $totalStr\n'

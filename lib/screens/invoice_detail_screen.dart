@@ -78,7 +78,6 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
   }
 
-  // ------------------- NUEVA FUNCIONALIDAD -------------------
   Future<void> _reprintInvoice() async {
     if (invoice == null) return;
 
@@ -89,6 +88,8 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     // Preparar datos para la impresión
     final invoiceData = InvoiceData(
       id: invoice!['id'],
+      isCancelled: invoice!['is_cancelled'] == 1,
+      isPaid: invoice!['is_paid'] == 1,
       type: 'Factura', // o puedes traerlo desde la DB si tienes
       customerName: customer?['name'] ?? 'N/A',
       sellerName: seller?['name'] ?? 'N/A',
@@ -115,6 +116,68 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     );
   }
 
+  Future<void> _markPaid() async {
+    if (invoice == null || invoice!['is_paid'] == 1) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmar pago"),
+        content: const Text("¿Desea marcar esta factura como pagada?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Sí, marcar como pagada"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    await DBHelper.markInvoicePaid(invoice!['id']);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Factura marcada como pagada")),
+    );
+    await _loadInvoice(); // refrescar datos
+  }
+
+  Future<void> _markCancelled() async {
+    if (invoice == null || invoice!['is_cancelled'] == 1) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmar anulación"),
+        content: const Text(
+          "¿Desea anular esta factura? Esta acción no se puede deshacer.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Sí, anular"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    await DBHelper.markInvoiceCancelled(invoice!['id']);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Factura anulada")));
+    await _loadInvoice(); // refrescar datos
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading)
@@ -126,6 +189,20 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
       appBar: AppBar(
         title: Text("Factura #${invoice!['id']}"),
         actions: [
+          if (invoice!['is_paid'] == 0 && invoice!['is_cancelled'] == 0)
+            IconButton(
+              icon: const Icon(Icons.check_circle, color: Colors.green),
+              onPressed: _markPaid,
+              tooltip: 'Marcar como pagada',
+            ),
+
+          // Botón anular
+          if (invoice!['is_cancelled'] == 0)
+            IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              onPressed: _markCancelled,
+              tooltip: 'Anular factura',
+            ),
           IconButton(
             icon: const Icon(Icons.print),
             onPressed: _reprintInvoice, // botón de reimpresión
@@ -146,6 +223,22 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    "Tipo: ${invoice!['is_credit'] == 1 ? 'Crédito' : 'Contado'}",
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  Text(
+                    "Estado: ${invoice!['is_cancelled'] == 1 ? 'Anulada' : (invoice!['is_paid'] == 1 ? 'Pagada' : 'Pendiente')}",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: invoice!['is_cancelled'] == 1
+                          ? Colors.red
+                          : (invoice!['is_paid'] == 1
+                                ? Colors.green
+                                : Colors.orange),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Text(
                     "Cliente: ${customer?['name'] ?? 'N/A'}",
                     style: const TextStyle(fontSize: 16),

@@ -62,81 +62,7 @@ class DBHelper {
             FOREIGN KEY(invoice_id) REFERENCES invoices(id)
           )
         ''');
-
-        // --- Productos ---
-        final product1 = await db.insert('products', {
-          'name': 'Hielo 10 lb',
-          'price': 50,
-        });
-        final product2 = await db.insert('products', {
-          'name': 'Hielo 20 lb',
-          'price': 90,
-        });
-
-        // --- Clientes ---
-        final customer1 = await db.insert('customers', {
-          'name': 'Cliente Genérico',
-        });
-        final customer2 = await db.insert('customers', {'name': 'Empresa ABC'});
-
-        // --- Vendedores ---
-        final seller1 = await db.insert('sellers', {'name': 'Deybis Melendez'});
-        final seller2 = await db.insert('sellers', {
-          'name': 'Vendedor Ejemplo',
-        });
-
-        // --- Facturas de ejemplo ---
-        final invoice1 = await db.insert('invoices', {
-          'customer_id': customer1,
-          'seller_id': seller1,
-          'date': DateTime.now()
-              .subtract(const Duration(days: 1))
-              .toIso8601String(),
-          'total': 100,
-        });
-
-        final invoice2 = await db.insert('invoices', {
-          'customer_id': customer2,
-          'seller_id': seller2,
-          'date': DateTime.now()
-              .subtract(const Duration(days: 2))
-              .toIso8601String(),
-          'total': 180,
-        });
-
-        final invoice3 = await db.insert('invoices', {
-          'customer_id': customer1,
-          'seller_id': seller2,
-          'date': DateTime.now()
-              .subtract(const Duration(days: 3))
-              .toIso8601String(),
-          'total': 50,
-        });
-
-        // --- Items de las facturas ---
-        await db.insert('invoice_items', {
-          'invoice_id': invoice1,
-          'product_id': product1,
-          'quantity': 2,
-          'price': 50,
-          'total': 100,
-        });
-
-        await db.insert('invoice_items', {
-          'invoice_id': invoice2,
-          'product_id': product2,
-          'quantity': 2,
-          'price': 90,
-          'total': 180,
-        });
-
-        await db.insert('invoice_items', {
-          'invoice_id': invoice3,
-          'product_id': product1,
-          'quantity': 1,
-          'price': 50,
-          'total': 50,
-        });
+        await _insertSampleData(db);
       },
     );
   }
@@ -274,6 +200,26 @@ class DBHelper {
     );
   }
 
+  static Future<int> markInvoicePaid(int invoiceId) async {
+    final db = await getDb();
+    return db.update(
+      'invoices',
+      {'is_paid': 1}, // marcar como pagada
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+    );
+  }
+
+  static Future<int> markInvoiceCancelled(int invoiceId) async {
+    final db = await getDb();
+    return db.update(
+      'invoices',
+      {'is_cancelled': 1}, // marcar como anulada
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+    );
+  }
+
   // ---------- CLIENTES ----------
   static Future<List<Map<String, dynamic>>> getCustomers() async {
     final db = await getDb();
@@ -348,4 +294,81 @@ Future<void> resetDatabase() async {
   final path = join(dbPath, 'hielo_pos.db');
 
   await deleteDatabase(path); // elimina la DB antigua
+}
+
+/// --- Función separada para agregar datos de ejemplo ---
+Future<void> _insertSampleData(Database db) async {
+  // Productos
+  final product1 = await db.insert('products', {
+    'name': 'Hielo 10 lb',
+    'price': 50,
+  });
+  final product2 = await db.insert('products', {
+    'name': 'Hielo 20 lb',
+    'price': 90,
+  });
+
+  // Clientes
+  final customer1 = await db.insert('customers', {'name': 'Cliente Genérico'});
+  final customer2 = await db.insert('customers', {'name': 'Empresa ABC'});
+
+  // Vendedores
+  final seller1 = await db.insert('sellers', {'name': 'Deybis Melendez'});
+  final seller2 = await db.insert('sellers', {'name': 'Vendedor Ejemplo'});
+
+  // --- Facturas ---
+  final invoice1 = await db.insert('invoices', {
+    'customer_id': customer1,
+    'seller_id': seller1,
+    'date': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+    'total': 100,
+    'is_credit': 0, // contado
+    'is_paid': 1,
+    'is_cancelled': 0,
+  });
+
+  final invoice2 = await db.insert('invoices', {
+    'customer_id': customer2,
+    'seller_id': seller2,
+    'date': DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
+    'total': 180,
+    'is_credit': 1, // crédito
+    'is_paid': 0,
+    'is_cancelled': 0,
+  });
+
+  final invoice3 = await db.insert('invoices', {
+    'customer_id': customer1,
+    'seller_id': seller2,
+    'date': DateTime.now().subtract(const Duration(days: 3)).toIso8601String(),
+    'total': 50,
+    'is_credit': 0,
+    'is_paid': 1,
+    'is_cancelled': 1, // anulada
+  });
+
+  // --- Items ---
+  await db.insert('invoice_items', {
+    'invoice_id': invoice1,
+    'product_id': product1,
+    'quantity': 2,
+    'price': 50,
+    'total': 100,
+  });
+
+  await db.insert('invoice_items', {
+    'invoice_id': invoice2,
+    'product_id': product2,
+    'quantity': 2,
+    'price': 90,
+    'total': 180,
+  });
+
+  await db.insert('invoice_items', {
+    'invoice_id': invoice3,
+    'product_id': product1,
+    'quantity': 1,
+    'price': 50,
+    'total': 50,
+  });
 }
