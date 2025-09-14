@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../db_helper.dart';
 import '../invoice_printer.dart';
 import '../localization.dart';
+import '../export_csv.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
@@ -153,6 +154,31 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         title: const Text('Historial de Facturas'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: fetchInvoices),
+          IconButton(
+            icon: const Icon(Icons.print),
+            onPressed: () async {
+              final device = await FlutterBluetoothPrinter.selectDevice(
+                context,
+              );
+              if (device == null) return;
+              await printInvoiceReport(device, invoices);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () async {
+              try {
+                await shareInvoiceReport(invoices);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Reporte compartido")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error al exportar: $e")),
+                );
+              }
+            },
+          ),
         ],
       ),
       body: Padding(
@@ -229,7 +255,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int?>(
-                    value: selectedCustomerId,
+                    initialValue: selectedCustomerId,
                     decoration: const InputDecoration(
                       labelText: "Cliente",
                       border: OutlineInputBorder(),
@@ -254,7 +280,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int?>(
-                    value: selectedSellerId,
+                    initialValue: selectedSellerId,
                     decoration: const InputDecoration(
                       labelText: "Vendedor",
                       border: OutlineInputBorder(),
@@ -284,17 +310,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 ElevatedButton(
                   onPressed: clearFilters,
                   child: const Text('Limpiar filtros'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: () async {
-                    final device = await FlutterBluetoothPrinter.selectDevice(
-                      context,
-                    );
-                    if (device == null) return;
-                    await printInvoiceReport(device, invoices);
-                  },
-                  child: const Text('Imprimir reporte'),
                 ),
               ],
             ),

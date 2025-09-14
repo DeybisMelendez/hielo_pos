@@ -180,18 +180,21 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading)
+    if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (invoice == null)
+    }
+    if (invoice == null) {
       return const Scaffold(body: Center(child: Text("Factura no encontrada")));
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: Text("Factura #${invoice!['id']}"),
         actions: [
+          // Botón marcar como pagada
           if (invoice!['is_paid'] == 0 && invoice!['is_cancelled'] == 0)
             IconButton(
-              icon: const Icon(Icons.check_circle, color: Colors.green),
+              icon: const Icon(Icons.payments, color: Colors.green),
               onPressed: _markPaid,
               tooltip: 'Marcar como pagada',
             ),
@@ -199,10 +202,11 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           // Botón anular
           if (invoice!['is_cancelled'] == 0)
             IconButton(
-              icon: const Icon(Icons.cancel, color: Colors.red),
+              icon: const Icon(Icons.block, color: Colors.red),
               onPressed: _markCancelled,
               tooltip: 'Anular factura',
             ),
+          // Botón Imprimir
           IconButton(
             icon: const Icon(Icons.print),
             onPressed: _reprintInvoice, // botón de reimpresión
