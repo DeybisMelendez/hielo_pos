@@ -1,4 +1,4 @@
-package com.example.hielo_pos
+package com.deybismelendez.hielo_pos
 
 import io.flutter.embedding.android.FlutterActivity
 
