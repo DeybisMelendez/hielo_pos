@@ -4,7 +4,8 @@ import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 import '../invoice_printer.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
-  const CreateInvoiceScreen({super.key});
+  final Widget drawer;
+  const CreateInvoiceScreen({super.key, required this.drawer});
 
   @override
   State<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
@@ -28,119 +29,125 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      drawer: widget.drawer,
+      appBar: AppBar(title: const Text('Crear Factura')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
             children: [
-              const Text(
-                "Facturar al crédito",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Switch(
-                value: isCredit,
-                onChanged: (value) => setState(() => isCredit = value),
-              ),
-            ],
-          ),
-          // Cliente
-          const Text(
-            'Cliente',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          DropdownButton<int>(
-            isExpanded: true,
-            value: selectedCustomerId,
-            hint: const Text('Selecciona un cliente'),
-            items: customers.map((c) {
-              return DropdownMenuItem<int>(
-                value: c['id'] as int,
-                child: Text(c['name']),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() => selectedCustomerId = value);
-            },
-          ),
-
-          // Vendedor
-          const Text(
-            'Vendedor',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          DropdownButton<int>(
-            isExpanded: true,
-            value: selectedSellerId,
-            hint: const Text('Selecciona un vendedor'),
-            items: sellers.map((s) {
-              return DropdownMenuItem<int>(
-                value: s['id'] as int,
-                child: Text(s['name']),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() => selectedSellerId = value);
-            },
-          ),
-
-          const Divider(),
-
-          // Lista de productos
-          Expanded(
-            child: ListView(
-              children: products.map((p) {
-                final selectedIndex = selectedItems.indexWhere(
-                  (item) => item['product_id'] == p['id'],
-                );
-                final quantity = selectedIndex >= 0
-                    ? selectedItems[selectedIndex]['quantity']
-                    : 0;
-                return ListTile(
-                  title: Text(p['name']),
-                  subtitle: Text('Precio: C\$ ${p['price']}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (quantity > 0)
-                        IconButton(
-                          icon: const Icon(Icons.remove),
-                          onPressed: () =>
-                              _updateQuantity(selectedIndex, quantity - 1),
-                        ),
-                      Text(quantity.toString()),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () => _addProduct(p),
-                      ),
-                    ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Facturar al crédito",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                );
-              }).toList(),
-            ),
-          ),
+                  Switch(
+                    value: isCredit,
+                    onChanged: (value) => setState(() => isCredit = value),
+                  ),
+                ],
+              ),
+              // Cliente
+              const Text(
+                'Cliente',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              DropdownButton<int>(
+                isExpanded: true,
+                value: selectedCustomerId,
+                hint: const Text('Selecciona un cliente'),
+                items: customers.map((c) {
+                  return DropdownMenuItem<int>(
+                    value: c['id'] as int,
+                    child: Text(c['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() => selectedCustomerId = value);
+                },
+              ),
 
-          const Divider(),
+              // Vendedor
+              const Text(
+                'Vendedor',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              DropdownButton<int>(
+                isExpanded: true,
+                value: selectedSellerId,
+                hint: const Text('Selecciona un vendedor'),
+                items: sellers.map((s) {
+                  return DropdownMenuItem<int>(
+                    value: s['id'] as int,
+                    child: Text(s['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() => selectedSellerId = value);
+                },
+              ),
 
-          // Totales y botón
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total: C\$ ${_total.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              const Divider(),
+
+              // Lista de productos
+              Expanded(
+                child: ListView(
+                  children: products.map((p) {
+                    final selectedIndex = selectedItems.indexWhere(
+                      (item) => item['product_id'] == p['id'],
+                    );
+                    final quantity = selectedIndex >= 0
+                        ? selectedItems[selectedIndex]['quantity']
+                        : 0;
+                    return ListTile(
+                      title: Text(p['name']),
+                      subtitle: Text('Precio: C\$ ${p['price']}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (quantity > 0)
+                            IconButton(
+                              icon: const Icon(Icons.remove),
+                              onPressed: () =>
+                                  _updateQuantity(selectedIndex, quantity - 1),
+                            ),
+                          Text(quantity.toString()),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _addProduct(p),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
-              ElevatedButton(
-                onPressed: selectedItems.isEmpty ? null : _saveInvoice,
-                child: const Text('Generar Factura'),
+
+              const Divider(),
+
+              // Totales y botón
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total: C\$ ${_total.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: selectedItems.isEmpty ? null : _saveInvoice,
+                    child: const Text('Generar Factura'),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

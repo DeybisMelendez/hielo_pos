@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../db_helper.dart';
-import '../invoice_printer.dart'; // importa tu archivo de impresión
+import '../invoice_printer.dart';
+import '../localization.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 
 class InvoiceDetailScreen extends StatefulWidget {
   final int invoiceId;
+  final Widget drawer;
 
-  const InvoiceDetailScreen({super.key, required this.invoiceId});
+  const InvoiceDetailScreen({
+    super.key,
+    required this.invoiceId,
+    required this.drawer,
+  });
 
   @override
   State<InvoiceDetailScreen> createState() => _InvoiceDetailScreenState();
@@ -73,24 +79,17 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     });
   }
 
-  String formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
-  }
-
   Future<void> _reprintInvoice() async {
     if (invoice == null) return;
 
-    // Seleccionar dispositivo Bluetooth
     final device = await FlutterBluetoothPrinter.selectDevice(context);
     if (device == null) return;
 
-    // Preparar datos para la impresión
     final invoiceData = InvoiceData(
       id: invoice!['id'],
       isCancelled: invoice!['is_cancelled'] == 1,
       isPaid: invoice!['is_paid'] == 1,
-      type: 'Factura', // o puedes traerlo desde la DB si tienes
+      type: 'REIMPRESIÓN',
       customerName: customer?['name'] ?? 'N/A',
       sellerName: seller?['name'] ?? 'N/A',
       items: items
@@ -108,7 +107,6 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
       printedAt: DateTime.now(),
     );
 
-    // Llamar a la función de impresión
     await printInvoice(device, invoiceData);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +129,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Sí, marcar como pagada"),
+            child: const Text("Sí, pagar"),
           ),
         ],
       ),
@@ -143,7 +141,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Factura marcada como pagada")),
     );
-    await _loadInvoice(); // refrescar datos
+    await _loadInvoice();
   }
 
   Future<void> _markCancelled() async {
@@ -175,7 +173,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text("Factura anulada")));
-    await _loadInvoice(); // refrescar datos
+    await _loadInvoice();
   }
 
   @override
@@ -188,10 +186,16 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     }
 
     return Scaffold(
+      drawer: widget.drawer,
       appBar: AppBar(
         title: Text("Factura #${invoice!['id']}"),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         actions: [
-          // Botón marcar como pagada
           if (invoice!['is_paid'] == 0 && invoice!['is_cancelled'] == 0)
             IconButton(
               icon: const Icon(Icons.payments, color: Colors.green),
@@ -199,17 +203,15 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
               tooltip: 'Marcar como pagada',
             ),
 
-          // Botón anular
           if (invoice!['is_cancelled'] == 0)
             IconButton(
               icon: const Icon(Icons.block, color: Colors.red),
               onPressed: _markCancelled,
               tooltip: 'Anular factura',
             ),
-          // Botón Imprimir
           IconButton(
             icon: const Icon(Icons.print),
-            onPressed: _reprintInvoice, // botón de reimpresión
+            onPressed: _reprintInvoice,
             tooltip: 'Reimprimir factura',
           ),
         ],
@@ -252,7 +254,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                     style: const TextStyle(fontSize: 16),
                   ),
                   Text(
-                    "Fecha: ${formatDate(invoice!['date'])}",
+                    "Fecha: ${Localization().formatDate(DateTime.parse(invoice!['date']))}",
                     style: const TextStyle(fontSize: 16),
                   ),
                   const Divider(height: 20),

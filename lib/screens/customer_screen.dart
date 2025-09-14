@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../db_helper.dart';
 
 class CustomerScreen extends StatefulWidget {
-  const CustomerScreen({super.key});
+  final Widget drawer;
+  const CustomerScreen({super.key, required this.drawer});
 
   @override
   State<CustomerScreen> createState() => _CustomerScreenState();
@@ -109,58 +110,71 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ElevatedButton.icon(
-          onPressed: () => _showCustomerForm(),
-          icon: const Icon(Icons.add),
-          label: const Text('Agregar Cliente'),
-        ),
-        Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _customersFuture,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final customers = snapshot.data!;
-
-              if (customers.isEmpty) {
-                return const Center(child: Text('No hay clientes'));
-              }
-
-              return ListView.builder(
-                itemCount: customers.length,
-                itemBuilder: (context, index) {
-                  final customer = customers[index];
-                  return ListTile(
-                    title: Text(customer['name']),
-                    subtitle: Text(
-                      'Dirección: ${customer['address'] ?? '-'}\nTeléfono: ${customer['phone'] ?? '-'}\nEmail: ${customer['email'] ?? '-'}',
-                    ),
-                    isThreeLine: true,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () =>
-                              _showCustomerForm(customer: customer),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => _deleteCustomer(customer['id']),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
+    return Scaffold(
+      drawer: widget.drawer,
+      appBar: AppBar(
+        title: const Text('Clientes'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-      ],
+      ),
+
+      body: Column(
+        children: [
+          ElevatedButton.icon(
+            onPressed: () => _showCustomerForm(),
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar Cliente'),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _customersFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final customers = snapshot.data!;
+
+                if (customers.isEmpty) {
+                  return const Center(child: Text('No hay clientes'));
+                }
+
+                return ListView.builder(
+                  itemCount: customers.length,
+                  itemBuilder: (context, index) {
+                    final customer = customers[index];
+                    return ListTile(
+                      title: Text(customer['name']),
+                      subtitle: Text(
+                        'Dirección: ${customer['address'] ?? '-'}\nTeléfono: ${customer['phone'] ?? '-'}\nEmail: ${customer['email'] ?? '-'}',
+                      ),
+                      isThreeLine: true,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () =>
+                                _showCustomerForm(customer: customer),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _deleteCustomer(customer['id']),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

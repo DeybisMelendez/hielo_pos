@@ -8,7 +8,8 @@ import '../export_csv.dart';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
-  const InvoiceHistoryScreen({super.key});
+  final Widget drawer;
+  const InvoiceHistoryScreen({super.key, required this.drawer});
 
   @override
   State<InvoiceHistoryScreen> createState() => _InvoiceHistoryScreenState();
@@ -150,8 +151,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: widget.drawer,
       appBar: AppBar(
         title: const Text('Historial de Facturas'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: fetchInvoices),
           IconButton(

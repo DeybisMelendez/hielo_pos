@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../db_helper.dart';
 
 class ProductScreen extends StatefulWidget {
-  const ProductScreen({super.key});
+  final Widget drawer;
+  const ProductScreen({super.key, required this.drawer});
 
   @override
   State<ProductScreen> createState() => _ProductScreenState();
@@ -83,54 +84,66 @@ class _ProductScreenState extends State<ProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ElevatedButton.icon(
-          onPressed: () => _showProductForm(),
-          icon: const Icon(Icons.add),
-          label: const Text('Agregar Producto'),
-        ),
-        Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _productsFuture,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final products = snapshot.data!;
-
-              if (products.isEmpty) {
-                return const Center(child: Text('No hay productos'));
-              }
-
-              return ListView.builder(
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final product = products[index];
-                  return ListTile(
-                    title: Text(product['name']),
-                    subtitle: Text('Precio: \$${product['price']}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _showProductForm(product: product),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => _deleteProduct(product['id']),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
+    return Scaffold(
+      drawer: widget.drawer,
+      appBar: AppBar(
+        title: const Text('Productos'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-      ],
+      ),
+      body: Column(
+        children: [
+          ElevatedButton.icon(
+            onPressed: () => _showProductForm(),
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar Producto'),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _productsFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final products = snapshot.data!;
+
+                if (products.isEmpty) {
+                  return const Center(child: Text('No hay productos'));
+                }
+
+                return ListView.builder(
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    final product = products[index];
+                    return ListTile(
+                      title: Text(product['name']),
+                      subtitle: Text('Precio: \$${product['price']}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => _showProductForm(product: product),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _deleteProduct(product['id']),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

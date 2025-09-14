@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../db_helper.dart';
 
 class SellerScreen extends StatefulWidget {
-  const SellerScreen({super.key});
+  final Widget drawer;
+  const SellerScreen({super.key, required this.drawer});
 
   @override
   State<SellerScreen> createState() => _SellerScreenState();
@@ -95,57 +96,69 @@ class _SellerScreenState extends State<SellerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ElevatedButton.icon(
-          onPressed: () => _showSellerForm(),
-          icon: const Icon(Icons.add),
-          label: const Text('Agregar Vendedor'),
-        ),
-        Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _sellersFuture,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final sellers = snapshot.data!;
-
-              if (sellers.isEmpty) {
-                return const Center(child: Text('No hay vendedores'));
-              }
-
-              return ListView.builder(
-                itemCount: sellers.length,
-                itemBuilder: (context, index) {
-                  final seller = sellers[index];
-                  return ListTile(
-                    title: Text(seller['name']),
-                    subtitle: Text(
-                      'Teléfono: ${seller['phone'] ?? '-'}\nEmail: ${seller['email'] ?? '-'}',
-                    ),
-                    isThreeLine: true,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _showSellerForm(seller: seller),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => _deleteSeller(seller['id']),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
+    return Scaffold(
+      drawer: widget.drawer,
+      appBar: AppBar(
+        title: const Text('Vendedores'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-      ],
+      ),
+      body: Column(
+        children: [
+          ElevatedButton.icon(
+            onPressed: () => _showSellerForm(),
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar Vendedor'),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _sellersFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final sellers = snapshot.data!;
+
+                if (sellers.isEmpty) {
+                  return const Center(child: Text('No hay vendedores'));
+                }
+
+                return ListView.builder(
+                  itemCount: sellers.length,
+                  itemBuilder: (context, index) {
+                    final seller = sellers[index];
+                    return ListTile(
+                      title: Text(seller['name']),
+                      subtitle: Text(
+                        'Teléfono: ${seller['phone'] ?? '-'}\nEmail: ${seller['email'] ?? '-'}',
+                      ),
+                      isThreeLine: true,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => _showSellerForm(seller: seller),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _deleteSeller(seller['id']),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

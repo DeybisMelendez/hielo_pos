@@ -15,101 +15,87 @@ class HieloPosApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Widget drawer = const DrawerMenu();
     return MaterialApp(
       title: 'Hielo Motastepe POS',
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/create-invoice',
       routes: {
-        '/create-invoice': (context) => const BaseScreen(
-          title: 'Crear Factura',
-          child: CreateInvoiceScreen(),
-        ),
-        '/products': (context) =>
-            const BaseScreen(title: 'Productos', child: ProductScreen()),
+        '/create-invoice': (context) => CreateInvoiceScreen(drawer: drawer),
+        '/products': (context) => ProductScreen(drawer: drawer),
         '/invoice_detail': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as int;
-          return InvoiceDetailScreen(invoiceId: args);
+          return InvoiceDetailScreen(invoiceId: args, drawer: drawer);
         },
-
-        '/invoice_history': (context) => const InvoiceHistoryScreen(),
-        '/customers': (context) =>
-            const BaseScreen(title: 'Clientes', child: CustomerScreen()),
-        '/sellers': (context) =>
-            const BaseScreen(title: 'Vendedores', child: SellerScreen()),
+        '/invoice_history': (context) => InvoiceHistoryScreen(drawer: drawer),
+        '/customers': (context) => CustomerScreen(drawer: drawer),
+        '/sellers': (context) => SellerScreen(drawer: drawer),
       },
     );
   }
 }
 
-/// Scaffold base con Drawer para navegación
-class BaseScreen extends StatelessWidget {
-  final Widget child;
-  final String title;
-
-  const BaseScreen({super.key, required this.child, required this.title});
+class DrawerMenu extends StatelessWidget {
+  const DrawerMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(color: Colors.blue),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Logo
-                  SizedBox(height: 80, child: Image.asset('assets/logo.png')),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Hielo Motastepe POS',
-                    style: TextStyle(color: Colors.white, fontSize: 24),
-                  ),
-                ],
-              ),
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: const BoxDecoration(color: Colors.blue),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Logo
+                SizedBox(height: 80, child: Image.asset('assets/logo.png')),
+                const SizedBox(height: 10),
+                const Text(
+                  'Hielo Motastepe POS',
+                  style: TextStyle(color: Colors.white, fontSize: 24),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.receipt),
-              title: const Text('Facturas'),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, '/create-invoice');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.inventory),
-              title: const Text('Productos'),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, '/products');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Historial de Facturas'),
-              onTap: () {
-                Navigator.pushNamed(context, '/invoice_history');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Clientes'),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, '/customers');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.store),
-              title: const Text('Vendedores'),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, '/sellers');
-              },
-            ),
-          ],
-        ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.receipt),
+            title: const Text('Crear Factura'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/create-invoice');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.inventory),
+            title: const Text('Productos'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/products');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('Historial de Facturas'),
+            onTap: () {
+              Navigator.pushNamed(context, '/invoice_history');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Clientes'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/customers');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.store),
+            title: const Text('Vendedores'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/sellers');
+            },
+          ),
+        ],
       ),
-      body: child,
     );
   }
 }
