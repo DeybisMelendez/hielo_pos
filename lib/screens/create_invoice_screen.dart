@@ -129,27 +129,56 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               const Divider(),
 
               // Totales y botón
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Total: C\$ ${_total.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // --- Total ---
+                    Text(
+                      'Total: C\$ ${_total.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed: selectedItems.isEmpty ? null : _saveInvoice,
-                    child: const Text('Guardar'),
-                  ),
-                  ElevatedButton(
-                    onPressed: selectedItems.isEmpty
-                        ? null
-                        : _saveInvoiceAndPrint,
-                    child: const Text('Imprimir'),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+
+                    // --- Botones ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: selectedItems.isEmpty
+                              ? null
+                              : _saveInvoice,
+                          icon: const Icon(Icons.save),
+                          label: const Text('Guardar'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: selectedItems.isEmpty
+                              ? null
+                              : _saveInvoiceAndPrint,
+                          icon: const Icon(Icons.print),
+                          label: const Text('Imprimir'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

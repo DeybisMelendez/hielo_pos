@@ -148,6 +148,28 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     }
   }
 
+  Widget _buildStatusChip(Map<String, dynamic> inv) {
+    String label;
+    Color color;
+
+    if (inv['is_cancelled'] == 1) {
+      label = "Anulada";
+      color = Colors.red.shade400;
+    } else if (inv['is_paid'] == 1) {
+      label = "Pagada";
+      color = Colors.green.shade400;
+    } else {
+      label = "Pendiente";
+      color = Colors.orange.shade400;
+    }
+
+    return Chip(
+      label: Text(label, style: const TextStyle(color: Colors.white)),
+      backgroundColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,133 +216,163 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         child: Column(
           children: [
             // --- FILTROS ---
-            Row(
+            ExpansionTile(
+              //padding: const EdgeInsets.all(8.0),
+              title: const Text("Filtros"),
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => selectDate(context, true),
-                    child: Text(
-                      'Desde: ${startDate != null ? Localization().formatDate(startDate!) : 'Todos'}',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => selectDate(context, false),
-                    child: Text(
-                      'Hasta: ${endDate != null ? Localization().formatDate(endDate!) : 'Todos'}',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Total mínimo',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      minTotal = value.isNotEmpty
-                          ? double.tryParse(value)
-                          : null;
-                    },
-                    onSubmitted: (_) {
-                      currentPage = 0;
-                      fetchInvoices();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Total máximo',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      maxTotal = value.isNotEmpty
-                          ? double.tryParse(value)
-                          : null;
-                    },
-                    onSubmitted: (_) {
-                      currentPage = 0;
-                      fetchInvoices();
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // --- Filtro por cliente y vendedor ---
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int?>(
-                    initialValue: selectedCustomerId,
-                    decoration: const InputDecoration(
-                      labelText: "Cliente",
-                      border: OutlineInputBorder(),
-                    ),
-                    items: customers
-                        .map(
-                          (c) => DropdownMenuItem<int?>(
-                            value: c['id'],
-                            child: Text(c['name']),
+                Column(
+                  children: [
+                    // --- Fechas ---
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        SizedBox(
+                          child: ElevatedButton(
+                            onPressed: () => selectDate(context, true),
+                            child: Text(
+                              'Desde: ${startDate != null ? Localization().formatDate(startDate!) : 'Todos'}',
+                            ),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        selectedCustomerId = val;
-                        currentPage = 0;
-                      });
-                      fetchInvoices();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<int?>(
-                    initialValue: selectedSellerId,
-                    decoration: const InputDecoration(
-                      labelText: "Vendedor",
-                      border: OutlineInputBorder(),
-                    ),
-                    items: sellers
-                        .map(
-                          (s) => DropdownMenuItem<int?>(
-                            value: s['id'],
-                            child: Text(s['name']),
+                        ),
+                        SizedBox(
+                          child: ElevatedButton(
+                            onPressed: () => selectDate(context, false),
+                            child: Text(
+                              'Hasta: ${endDate != null ? Localization().formatDate(endDate!) : 'Todos'}',
+                            ),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        selectedSellerId = val;
-                        currentPage = 0;
-                      });
-                      fetchInvoices();
-                    },
-                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // --- Totales ---
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        SizedBox(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Total mínimo',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 10,
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              minTotal = value.isNotEmpty
+                                  ? double.tryParse(value)
+                                  : null;
+                            },
+                            onSubmitted: (_) {
+                              currentPage = 0;
+                              fetchInvoices();
+                            },
+                          ),
+                        ),
+                        SizedBox(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Total máximo',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 10,
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              maxTotal = value.isNotEmpty
+                                  ? double.tryParse(value)
+                                  : null;
+                            },
+                            onSubmitted: (_) {
+                              currentPage = 0;
+                              fetchInvoices();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // --- Cliente y Vendedor ---
+                    SizedBox(
+                      child: DropdownButtonFormField<int?>(
+                        isExpanded: true,
+                        value: selectedCustomerId,
+                        decoration: const InputDecoration(
+                          labelText: "Cliente",
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 10,
+                          ),
+                        ),
+                        items: customers
+                            .map(
+                              (c) => DropdownMenuItem<int?>(
+                                value: c['id'],
+                                child: Text(c['name']),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            selectedCustomerId = val;
+                            currentPage = 0;
+                          });
+                          fetchInvoices();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      child: DropdownButtonFormField<int?>(
+                        isExpanded: true,
+                        value: selectedSellerId,
+                        decoration: const InputDecoration(
+                          labelText: "Vendedor",
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 10,
+                          ),
+                        ),
+                        items: sellers
+                            .map(
+                              (s) => DropdownMenuItem<int?>(
+                                value: s['id'],
+                                child: Text(s['name']),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            selectedSellerId = val;
+                            currentPage = 0;
+                          });
+                          fetchInvoices();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // --- Botón limpiar ---
+                    ElevatedButton.icon(
+                      onPressed: clearFilters,
+                      icon: const Icon(Icons.clear),
+                      label: const Text('Limpiar filtros'),
+                    ),
+                  ],
                 ),
               ],
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: clearFilters,
-                  child: const Text('Limpiar filtros'),
-                ),
-              ],
-            ),
+
             // --- LISTA DE FACTURAS ---
             Expanded(
               child: invoices.isEmpty
@@ -346,31 +398,16 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                                 .data![1]?['name']; // nombre del vendedor
 
                             return Card(
-                              child: ListTile(
-                                isThreeLine: true,
-                                title: Text(
-                                  '# ${inv['id']} - $customer - ${inv['is_credit'] == 1 ? 'Crédito' : 'Contado'}',
-                                ),
-                                subtitle: Text(
-                                  'Fecha: ${Localization().formatDate(DateTime.parse(inv['date']))}\nVendedor $seller\nEstado: ${inv['is_cancelled'] == 1 ? 'Anulada' : (inv['is_paid'] == 1 ? 'Pagada' : 'Pendiente')}',
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      "C\$ ${inv['total']}",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.print),
-                                      tooltip: "Reimprimir",
-                                      onPressed: () => reprintInvoice(inv),
-                                    ),
-                                  ],
-                                ),
+                              elevation: 3,
+                              margin: const EdgeInsets.symmetric(
+                                vertical: 6,
+                                horizontal: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
                                 onTap: () {
                                   Navigator.pushNamed(
                                     context,
@@ -378,6 +415,86 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                                     arguments: inv['id'] as int,
                                   );
                                 },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // --- Encabezado ---
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            '#${inv['id']} - $customer',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Text(
+                                            inv['is_credit'] == 1
+                                                ? 'Crédito'
+                                                : 'Contado',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: inv['is_credit'] == 1
+                                                  ? Colors.blue
+                                                  : Colors.grey[700],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // --- Detalles principales ---
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Fecha: ${Localization().formatDate(DateTime.parse(inv['date']))}',
+                                                ),
+                                                Text('Vendedor: $seller'),
+                                              ],
+                                            ),
+                                          ),
+                                          Text(
+                                            "C\$ ${inv['total']}",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // --- Estado + acciones ---
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          _buildStatusChip(
+                                            inv,
+                                          ), // 👈 estado con color
+                                          IconButton(
+                                            icon: const Icon(Icons.print),
+                                            tooltip: "Reimprimir",
+                                            onPressed: () =>
+                                                reprintInvoice(inv),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             );
                           },

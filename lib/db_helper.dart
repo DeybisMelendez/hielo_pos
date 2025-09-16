@@ -5,7 +5,7 @@ class DBHelper {
   static Database? _db;
 
   static Future<Database> _initDb() async {
-    await resetDatabase(); // solo en desarrollo
+    //await resetDatabase(); // solo en desarrollo
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'hielo_pos.db');
 
@@ -70,7 +70,7 @@ class DBHelper {
             FOREIGN KEY(invoice_id) REFERENCES invoices(id)
           )
         ''');
-        await _insertSampleData(db);
+        //await insertSampleData(db);
       },
     );
   }
@@ -335,7 +335,7 @@ Future<void> resetDatabase() async {
 }
 
 /// --- Función separada para agregar datos de ejemplo ---
-Future<void> _insertSampleData(Database db) async {
+Future<void> insertSampleData(Database db) async {
   // Productos
   final product1 = await db.insert('products', {
     'name': 'Hielo 10 lb',
