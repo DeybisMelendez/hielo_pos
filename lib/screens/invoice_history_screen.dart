@@ -330,44 +330,62 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       itemBuilder: (context, index) {
                         final inv = invoices[index];
 
-                        return Card(
-                          child: ListTile(
-                            isThreeLine: true,
-                            title: Text(
-                              '# ${inv['id']} - Cliente ${inv['customer_id']} - ${inv['is_credit'] == 1 ? 'Crédito' : 'Contado'}',
-                            ),
-                            subtitle: Text(
-                              'Fecha: ${Localization().formatDate(DateTime.parse(inv['date']))}\nVendedor ${inv['seller_id']}\nEstado: ${inv['is_cancelled'] == 1 ? 'Anulada' : (inv['is_paid'] == 1 ? 'Pagada' : 'Pendiente')}',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "C\$ ${inv['total']}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                        return FutureBuilder(
+                          future: Future.wait([
+                            DBHelper.getCustomer(inv['customer_id']),
+                            DBHelper.getSeller(inv['seller_id']),
+                          ]),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const ListTile(title: Text('Cargando...'));
+                            }
+
+                            final customer = snapshot
+                                .data![0]?['name']; // nombre del cliente
+                            final seller = snapshot
+                                .data![1]?['name']; // nombre del vendedor
+
+                            return Card(
+                              child: ListTile(
+                                isThreeLine: true,
+                                title: Text(
+                                  '# ${inv['id']} - $customer - ${inv['is_credit'] == 1 ? 'Crédito' : 'Contado'}',
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.print),
-                                  tooltip: "Reimprimir",
-                                  onPressed: () => reprintInvoice(inv),
+                                subtitle: Text(
+                                  'Fecha: ${Localization().formatDate(DateTime.parse(inv['date']))}\nVendedor $seller\nEstado: ${inv['is_cancelled'] == 1 ? 'Anulada' : (inv['is_paid'] == 1 ? 'Pagada' : 'Pendiente')}',
                                 ),
-                              ],
-                            ),
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/invoice_detail',
-                                arguments: inv['id'] as int,
-                              );
-                            },
-                          ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "C\$ ${inv['total']}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.print),
+                                      tooltip: "Reimprimir",
+                                      onPressed: () => reprintInvoice(inv),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/invoice_detail',
+                                    arguments: inv['id'] as int,
+                                  );
+                                },
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
             ),
+
             // --- PAGINACIÓN ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

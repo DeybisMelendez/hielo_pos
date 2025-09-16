@@ -141,7 +141,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   ),
                   ElevatedButton(
                     onPressed: selectedItems.isEmpty ? null : _saveInvoice,
-                    child: const Text('Generar Factura'),
+                    child: const Text('Guardar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: selectedItems.isEmpty
+                        ? null
+                        : _saveInvoiceAndPrint,
+                    child: const Text('Imprimir'),
                   ),
                 ],
               ),
@@ -201,6 +207,36 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   Future<void> _saveInvoice() async {
+    if (selectedCustomerId == null || selectedSellerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe seleccionar cliente y vendedor')),
+      );
+      return;
+    }
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe agregar al menos un producto')),
+      );
+      return;
+    }
+
+    await DBHelper.createInvoice(
+      customerId: selectedCustomerId!,
+      sellerId: selectedSellerId!,
+      items: selectedItems,
+      total: _total,
+      isCredit: isCredit,
+    );
+
+    setState(() => selectedItems.clear());
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Factura generada correctamente')),
+    );
+  }
+
+  Future<void> _saveInvoiceAndPrint() async {
     if (selectedCustomerId == null || selectedSellerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Debe seleccionar cliente y vendedor')),

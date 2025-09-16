@@ -17,21 +17,29 @@ class DBHelper {
           CREATE TABLE products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            price REAL NOT NULL
+            price REAL NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1))
           )
         ''');
 
         await db.execute('''
           CREATE TABLE customers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            address TEXT,
+            phone TEXT,
+            email TEXT,
+            is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1))
           )
       ''');
 
         await db.execute('''
           CREATE TABLE sellers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            phone TEXT,
+            email TEXT,
+            is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1))
           )
         ''');
 
@@ -76,7 +84,12 @@ class DBHelper {
   // Productos
   static Future<List<Map<String, dynamic>>> getProducts() async {
     final db = await getDb();
-    return db.query('products', orderBy: 'id ASC');
+    return db.query(
+      'products',
+      where: 'is_active = ?',
+      whereArgs: [1],
+      orderBy: 'id ASC',
+    );
   }
 
   static Future<int> createProduct(Map<String, dynamic> product) async {
@@ -91,7 +104,12 @@ class DBHelper {
 
   static Future<int> deleteProduct(int id) async {
     final db = await getDb();
-    return db.delete('products', where: 'id = ?', whereArgs: [id]);
+    return db.update(
+      'products',
+      {'is_active': 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   // Facturación
@@ -112,8 +130,8 @@ class DBHelper {
       'date': createdAt.toIso8601String(),
       'total': total,
       'is_credit': isCredit ? 1 : 0,
-      'is_paid': isCredit ? 0 : 1, // si es contado, marcar como pagada
-      'is_cancelled': 0, // por defecto no anulada
+      'is_paid': isCredit ? 0 : 1,
+      'is_cancelled': 0,
     });
 
     // Insertar items
@@ -223,7 +241,12 @@ class DBHelper {
   // ---------- CLIENTES ----------
   static Future<List<Map<String, dynamic>>> getCustomers() async {
     final db = await getDb();
-    return db.query('customers', orderBy: 'id ASC');
+    return db.query(
+      'customers',
+      where: 'is_active = ?',
+      whereArgs: [1],
+      orderBy: 'id ASC',
+    );
   }
 
   static Future<Map<String, dynamic>?> getCustomer(int id) async {
@@ -257,13 +280,23 @@ class DBHelper {
 
   static Future<int> deleteCustomer(int id) async {
     final db = await getDb();
-    return db.delete('customers', where: 'id = ?', whereArgs: [id]);
+    return db.update(
+      'customers',
+      {'is_active': 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   // ---------- VENDEDORES ----------
   static Future<List<Map<String, dynamic>>> getSellers() async {
     final db = await getDb();
-    return db.query('sellers', orderBy: 'id ASC');
+    return db.query(
+      'sellers',
+      where: 'is_active = ?',
+      whereArgs: [1],
+      orderBy: 'id ASC',
+    );
   }
 
   static Future<int> createSeller(Map<String, dynamic> seller) async {
@@ -278,7 +311,12 @@ class DBHelper {
 
   static Future<int> deleteSeller(int id) async {
     final db = await getDb();
-    return db.delete('sellers', where: 'id = ?', whereArgs: [id]);
+    return db.update(
+      'sellers',
+      {'is_active': 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   static Future<Map<String, dynamic>?> getSeller(int id) async {

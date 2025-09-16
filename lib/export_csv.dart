@@ -2,35 +2,60 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'db_helper.dart';
 
 Future<String> exportInvoicesToCSV(List<Map<String, dynamic>> invoices) async {
   final List<List<String>> rows = [];
 
   // Encabezados
-  rows.add(['ID', 'Cliente', 'Vendedor', 'Fecha', 'Total', 'Estado', 'Tipo']);
+  rows.add([
+    'Fecha',
+    'Factura',
+    'Tipo',
+    'Estado',
+    'Cliente',
+    'Vendedor',
+    'Cantidad',
+    'Producto',
+    'Total Producto',
+  ]);
 
-  // Filas de datos
   for (var inv in invoices) {
-    final customerName = inv['customer_name'] ?? 'Desconocido';
-    final sellerName = inv['seller_name'] ?? 'Desconocido';
-    final dateStr = inv['date'] != null
-        ? DateTime.parse(inv['date']).toIso8601String()
-        : '';
-    final totalStr = inv['total']?.toStringAsFixed(2) ?? '0.00';
+    final customer =
+        await DBHelper.getCustomer(inv['customer_id']) ??
+        {'name': 'Desconocido'};
+    final seller =
+        await DBHelper.getSeller(inv['seller_id']) ?? {'name': 'Desconocido'};
+
+    final dateStr = inv['date'] ?? '';
     final status = inv['is_cancelled'] == 1
         ? 'ANULADA'
         : (inv['is_paid'] == 1 ? 'PAGADA' : 'PENDIENTE');
     final type = inv['is_credit'] == 1 ? 'CRÉDITO' : 'CONTADO';
 
-    rows.add([
-      inv['id'].toString(),
-      customerName,
-      sellerName,
-      dateStr,
-      totalStr,
-      status,
-      type,
-    ]);
+    // Obtener items de la factura
+    final items = await DBHelper.getInvoiceItems(inv['id']);
+
+    for (var item in items) {
+      final product = await DBHelper.getProducts().then((products) {
+        return products.firstWhere(
+          (p) => p['id'] == item['product_id'],
+          orElse: () => {'name': 'Desconocido'},
+        );
+      });
+
+      rows.add([
+        dateStr,
+        inv['id'].toString(),
+        type,
+        status,
+        customer['name'],
+        seller['name'],
+        item['quantity'].toString(),
+        product['name'],
+        item['total'].toStringAsFixed(2),
+      ]);
+    }
   }
 
   // Convertir a CSV
