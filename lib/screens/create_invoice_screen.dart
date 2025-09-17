@@ -99,8 +99,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     final selectedIndex = selectedItems.indexWhere(
                       (item) => item['product_id'] == p['id'],
                     );
+
                     final quantity = selectedIndex >= 0
-                        ? selectedItems[selectedIndex]['quantity']
+                        ? selectedItems[selectedIndex]['quantity'] as int
                         : 0;
                     return ListTile(
                       title: Text(p['name']),
@@ -111,17 +112,18 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           if (quantity > 0)
                             IconButton(
                               icon: const Icon(Icons.remove),
-                              onPressed: () =>
-                                  _updateQuantity(selectedIndex, quantity - 1),
+                              onPressed: () {
+                                if (selectedIndex >= 0) {
+                                  _updateQuantity(selectedIndex, quantity - 1);
+                                }
+                              },
                             ),
 
-                          // Campo editable para cantidad
+                          // Campo editable
                           SizedBox(
                             width: 50,
-                            child: TextField(
-                              controller: TextEditingController(
-                                text: quantity.toString(),
-                              ),
+                            child: TextFormField(
+                              initialValue: quantity.toString(),
                               textAlign: TextAlign.center,
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(
@@ -130,16 +132,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   vertical: 4,
                                 ),
                               ),
-                              onSubmitted: (value) {
+                              onChanged: (value) {
                                 final newQuantity = int.tryParse(value) ?? 0;
-                                _updateQuantity(selectedIndex, newQuantity);
+                                _addProduct(p, newQuantity);
                               },
                             ),
                           ),
 
                           IconButton(
                             icon: const Icon(Icons.add),
-                            onPressed: () => _addProduct(p),
+                            onPressed: () {
+                              final newQuantity = quantity + 1;
+                              _addProduct(p, newQuantity);
+                            },
                           ),
                         ],
                       ),
@@ -222,35 +227,36 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     });
   }
 
-  void _addProduct(Map<String, dynamic> product) {
+  void _addProduct(Map<String, dynamic> product, int q) {
     final index = selectedItems.indexWhere(
       (item) => item['product_id'] == product['id'],
     );
+
     if (index >= 0) {
-      _updateQuantity(index, selectedItems[index]['quantity'] + 1);
-    } else {
+      _updateQuantity(index, q);
+    } else if (q > 0) {
       setState(() {
         selectedItems.add({
           'product_id': product['id'],
           'name': product['name'],
           'price': product['price'],
-          'quantity': 1,
-          'total': product['price'],
+          'quantity': q,
+          'total': product['price'] * q,
         });
       });
     }
   }
 
   void _updateQuantity(int index, int quantity) {
-    if (quantity <= 0) {
-      setState(() => selectedItems.removeAt(index));
-    } else {
-      setState(() {
+    setState(() {
+      if (quantity <= 0) {
+        selectedItems.removeAt(index);
+      } else {
         selectedItems[index]['quantity'] = quantity;
         selectedItems[index]['total'] =
             selectedItems[index]['price'] * quantity;
-      });
-    }
+      }
+    });
   }
 
   double get _total {

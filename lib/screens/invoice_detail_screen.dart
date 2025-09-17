@@ -80,38 +80,28 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   }
 
   Future<void> _reprintInvoice() async {
-    if (invoice == null) return;
-
     final device = await FlutterBluetoothPrinter.selectDevice(context);
-    if (device == null) return;
-
+    if (device == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se seleccionó ninguna impresora')),
+      );
+      return;
+    }
     final invoiceData = InvoiceData(
-      id: invoice!['id'],
-      isCancelled: invoice!['is_cancelled'] == 1,
-      isPaid: invoice!['is_paid'] == 1,
+      id: invoice?['id'],
+      isCancelled: false,
+      isPaid: invoice?['is_paid'] == 1,
       type: 'REIMPRESIÓN',
-      customerName: customer?['name'] ?? 'N/A',
-      sellerName: seller?['name'] ?? 'N/A',
-      items: items
-          .map(
-            (e) => {
-              'name': e['product_name'],
-              'quantity': e['quantity'],
-              'price': e['price'],
-              'total': e['total'],
-            },
-          )
-          .toList(),
-      total: invoice!['total'],
-      createdAt: DateTime.parse(invoice!['date']),
+      createdAt: DateTime.parse(invoice?['date']),
       printedAt: DateTime.now(),
+      customerName: customer?['name'],
+      sellerName: seller?['name'],
+      items: items,
+      total: invoice!['total'],
     );
 
+    // Imprimir ORIGINAL
     await printInvoice(device, invoiceData);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Factura reimpresa correctamente")),
-    );
   }
 
   Future<void> _markPaid() async {

@@ -304,7 +304,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                     SizedBox(
                       child: DropdownButtonFormField<int?>(
                         isExpanded: true,
-                        value: selectedCustomerId,
+                        initialValue: selectedCustomerId,
                         decoration: const InputDecoration(
                           labelText: "Cliente",
                           border: OutlineInputBorder(),
@@ -334,7 +334,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                     SizedBox(
                       child: DropdownButtonFormField<int?>(
                         isExpanded: true,
-                        value: selectedSellerId,
+                        initialValue: selectedSellerId,
                         decoration: const InputDecoration(
                           labelText: "Vendedor",
                           border: OutlineInputBorder(),
