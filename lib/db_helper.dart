@@ -92,6 +92,22 @@ class DBHelper {
     );
   }
 
+  static Future<Map<String, dynamic>?> getProduct(int id) async {
+    final db = await getDb();
+    final result = await db.query(
+      'products',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return result.first;
+    } else {
+      return null;
+    }
+  }
+
   static Future<int> createProduct(Map<String, dynamic> product) async {
     final db = await getDb();
     return db.insert('products', product);

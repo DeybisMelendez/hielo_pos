@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_bluetooth_printer/flutter_bluetooth_printer.dart';
 import 'localization.dart';
+import 'db_helper.dart';
 
 /// Modelo de datos para una factura
 class InvoiceData {
@@ -79,9 +80,7 @@ Future<void> printInvoice(BluetoothDevice device, InvoiceData invoice) async {
       'Tel: 8814-4902\n\n',
     ),
   );
-  builder.add(
-    latin1.encode('*** FACTURA #${invoice.id} - ${invoice.type} ***\n\n'),
-  );
+  builder.add(latin1.encode('FACTURA #${invoice.id}\n${invoice.type}\n\n'));
   builder.add(
     latin1.encode(
       'Estado: ${invoice.isCancelled ? 'ANULADA' : (invoice.isPaid ? 'PAGADA' : 'PENDIENTE')}\n',
@@ -98,9 +97,10 @@ Future<void> printInvoice(BluetoothDevice device, InvoiceData invoice) async {
 
   // Detalles de productos
   for (var item in invoice.items) {
+    final product = await DBHelper.getProduct(item['product_id']);
     builder.add(
       latin1.encode(
-        '${item['quantity']} x ${item['name']}: C\$${item['price'].toStringAsFixed(2)}\n',
+        '${item['quantity']} x ${product?['name']}: C\$${item['price'].toStringAsFixed(2)}\n',
       ),
     );
     builder.add(Commands.setAlignmentRight);
@@ -164,8 +164,10 @@ Future<void> printInvoiceReport(
   builder.add(latin1.encode('--------------------------------\n'));
 
   for (var inv in invoices) {
-    final customerName = inv['customer_name'] ?? 'Desconocido';
-    final sellerName = inv['seller_name'] ?? 'Desconocido';
+    final customer = await DBHelper.getCustomer(inv['customer_id']);
+    final seller = await DBHelper.getSeller(inv['seller_id']);
+    final customerName = customer?['name'] ?? 'Desconocido';
+    final sellerName = seller?['name'] ?? 'Desconocido';
     final dateStr = inv['date'] != null
         ? Localization().formatDate(DateTime.parse(inv['date']))
         : '';

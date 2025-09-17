@@ -114,7 +114,29 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               onPressed: () =>
                                   _updateQuantity(selectedIndex, quantity - 1),
                             ),
-                          Text(quantity.toString()),
+
+                          // Campo editable para cantidad
+                          SizedBox(
+                            width: 50,
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: quantity.toString(),
+                              ),
+                              textAlign: TextAlign.center,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 4,
+                                ),
+                              ),
+                              onSubmitted: (value) {
+                                final newQuantity = int.tryParse(value) ?? 0;
+                                _updateQuantity(selectedIndex, newQuantity);
+                              },
+                            ),
+                          ),
+
                           IconButton(
                             icon: const Icon(Icons.add),
                             onPressed: () => _addProduct(p),
