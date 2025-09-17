@@ -21,10 +21,22 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   int? selectedSellerId;
   bool isCredit = false;
 
+  // Controladores para cada producto
+  final Map<int, TextEditingController> _controllers = {};
+
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    // Liberar memoria de los controladores
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -103,6 +115,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                     final quantity = selectedIndex >= 0
                         ? selectedItems[selectedIndex]['quantity'] as int
                         : 0;
+
+                    // Inicializar el controlador si no existe
+                    if (!_controllers.containsKey(p['id'])) {
+                      _controllers[p['id']] = TextEditingController(
+                        text: quantity.toString(),
+                      );
+                    } else {
+                      _controllers[p['id']]!.text = quantity.toString();
+                    }
+
                     return ListTile(
                       title: Text(p['name']),
                       subtitle: Text('Precio: C\$ ${p['price']}'),
@@ -114,7 +136,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                               icon: const Icon(Icons.remove),
                               onPressed: () {
                                 if (selectedIndex >= 0) {
-                                  _updateQuantity(selectedIndex, quantity - 1);
+                                  _updateQuantity(
+                                    selectedIndex,
+                                    quantity - 1,
+                                    p['id'],
+                                  );
                                 }
                               },
                             ),
@@ -123,7 +149,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                           SizedBox(
                             width: 50,
                             child: TextFormField(
-                              initialValue: quantity.toString(),
+                              controller: _controllers[p['id']],
                               textAlign: TextAlign.center,
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(
@@ -233,7 +259,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
 
     if (index >= 0) {
-      _updateQuantity(index, q);
+      _updateQuantity(index, q, product['id']);
     } else if (q > 0) {
       setState(() {
         selectedItems.add({
@@ -244,17 +270,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           'total': product['price'] * q,
         });
       });
+      _controllers[product['id']]?.text = q.toString();
     }
   }
 
-  void _updateQuantity(int index, int quantity) {
+  void _updateQuantity(int index, int quantity, int productId) {
     setState(() {
       if (quantity <= 0) {
         selectedItems.removeAt(index);
+        _controllers[productId]?.text = "0";
       } else {
         selectedItems[index]['quantity'] = quantity;
         selectedItems[index]['total'] =
             selectedItems[index]['price'] * quantity;
+        _controllers[productId]?.text = quantity.toString();
       }
     });
   }
@@ -375,7 +404,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         await printInvoice(device, invoiceData.copyWith(type: 'COPIA'));
       }
 
-      setState(() => selectedItems.clear());
+      setState(() {
+        selectedItems.clear();
+        _controllers.forEach((_, c) => c.text = "0");
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
